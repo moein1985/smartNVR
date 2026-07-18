@@ -1,0 +1,46 @@
+detectors:
+  onnx:
+    type: onnx
+
+model:
+  model_type: yolo-generic
+  path: /config/model_cache/yolov9-t-320.onnx
+  labelmap_path: /config/labelmap/coco-80.txt
+  input_tensor: nchw
+  input_pixel_format: rgb
+  input_dtype: float
+  width: 320
+  height: 320
+
+mqtt:
+  enabled: false
+
+cameras:
+  cam1:
+    enabled: true
+    ffmpeg:
+      inputs:
+        - path: rtsp://admin:admin123@192.168.85.112:554/Streaming/Channels/102
+          input_args: preset-rtsp-generic
+          roles:
+            - detect
+        - path: rtsp://admin:admin123@192.168.85.112:554/Streaming/Channels/101
+          input_args: preset-rtsp-generic
+          roles:
+            - record
+    detect:
+      enabled: true
+      width: 640
+      height: 480
+      fps: 5
+    record:
+      enabled: true
+      retain:
+        days: 7
+        mode: motion
+
+record:
+  enabled: true
+  retain:
+    days: 7
+    mode: motion

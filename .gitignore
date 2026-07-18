@@ -1,0 +1,67 @@
+# ============================================================
+# Root .gitignore for smartNVR (Frigate Intelligence Platform)
+# ============================================================
+
+# === Archive & Large Files ===
+Archive_Pre_Deployment/
+*.tar.gz
+*.zip
+
+# === Model Files (too large for git) ===
+*.onnx
+*.pt
+*.pth
+*.weights
+
+# === Python ===
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# === Environment Variables ===
+.env
+.env.local
+.env.*.local
+
+# === Node.js / Next.js ===
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# === OpenAPI Generated (regenerated from backend) ===
+frigate-web-panel/src/lib/api/generated.ts
+frigate-web-panel/openapi.json
+
+# === Docker ===
+*.tar
+
+# === OS / Editor ===
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.code-workspace
+
+# === Logs ===
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# === Coverage ===
+coverage/
+.coverage
+htmlcov/

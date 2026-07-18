@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  frigate-intelligence:
+    build: .
+    container_name: frigate-intelligence
+    restart: unless-stopped
+    ports:
+      - "8088:8000"
+    volumes:
+      - /opt/frigate/config:/opt/frigate/config:ro
+    env_file:
+      - .env
+    networks:
+      - frigate-net
+
+networks:
+  frigate-net:
+    driver: bridge
