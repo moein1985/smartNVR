@@ -47,12 +47,12 @@ frigate-web-panel/
 ```
 
 **Acceptance Criteria:**
-- [ ] `npx create-next-app` completes without errors
-- [ ] `npm run dev` starts dev server on `http://localhost:3000`
-- [ ] TypeScript strict mode enabled
-- [ ] TailwindCSS working (default page renders with Tailwind styles)
-- [ ] `src/` directory structure used
-- [ ] Import alias `@/*` configured in `tsconfig.json`
+- [x] `npx create-next-app` completes without errors (Next.js 16.2.10)
+- [x] `npm run dev` starts dev server on `http://localhost:3000`
+- [x] TypeScript strict mode enabled
+- [x] TailwindCSS working (TailwindCSS 4)
+- [x] `src/` directory structure used
+- [x] Import alias `@/*` configured in `tsconfig.json`
 
 ---
 
@@ -78,10 +78,10 @@ npm install -D openapi-typescript
 | `openapi-typescript` | dev | Generates TypeScript types from `openapi.json` |
 
 **Acceptance Criteria:**
-- [ ] `@tanstack/react-query` installed and importable
-- [ ] `openapi-fetch` installed and importable
-- [ ] `openapi-typescript` installed as dev dependency
-- [ ] No version conflicts in `package.json`
+- [x] `@tanstack/react-query` installed and importable (^5.101.2)
+- [x] `openapi-fetch` installed and importable (^0.17.0)
+- [x] `openapi-typescript` installed as dev dependency (^7.13.0)
+- [x] No version conflicts in `package.json`
 
 ---
 
@@ -110,10 +110,10 @@ Add the following scripts:
 4. Re-run this command whenever the backend API changes
 
 **Acceptance Criteria:**
-- [ ] `npm run generate-api` fetches spec from `http://192.168.85.202:8088/openapi.json`
-- [ ] `src/lib/api/generated.ts` is created with TypeScript types
-- [ ] Generated file contains `paths` interface with all API routes
-- [ ] Script works even if backend is on a different host (change URL in script)
+- [x] `npm run generate-api` fetches spec from `http://192.168.85.202:8088/openapi.json`
+- [x] `src/lib/api/generated.ts` is created with TypeScript types (354 lines)
+- [x] Generated file contains `paths` interface with all API routes (query, health, events, pos/correlate, analytics/summary)
+- [x] Script works even if backend is on a different host (change URL in script)
 
 ---
 
@@ -147,9 +147,9 @@ NEXT_PUBLIC_API_URL=http://192.168.85.202:8088
 ```
 
 **Acceptance Criteria:**
-- [ ] `apiClient` is typed with `paths` from generated types
-- [ ] Base URL configurable via `NEXT_PUBLIC_API_URL` env var
-- [ ] `apiClient.GET` and `apiClient.POST` are type-safe (autocomplete for paths and params)
+- [x] `apiClient` is typed with `paths` from generated types
+- [x] Base URL configurable via `NEXT_PUBLIC_API_URL` env var
+- [x] `apiClient.GET` and `apiClient.POST` are type-safe (autocomplete for paths and params)
 
 ---
 
@@ -210,10 +210,10 @@ export default function RootLayout({
 ```
 
 **Acceptance Criteria:**
-- [ ] `QueryProvider` wraps the entire app in `layout.tsx`
-- [ ] `QueryClient` configured with sensible defaults (staleTime, retry)
-- [ ] `useQuery` and `useMutation` hooks work in any component
-- [ ] HTML lang set to `fa` and dir to `rtl` for Persian UI
+- [x] `QueryProvider` wraps the entire app in `layout.tsx`
+- [x] `QueryClient` configured with sensible defaults (staleTime 60s, retry 2)
+- [x] `useQuery` and `useMutation` hooks work in any component
+- [x] HTML lang set to `fa` and dir to `rtl` for Persian UI
 
 ---
 
@@ -729,10 +729,10 @@ openapi.json
 ```
 
 **Acceptance Criteria:**
-- [ ] `.env.local` exists with `NEXT_PUBLIC_API_URL`
+- [x] `.env.local` exists with `NEXT_PUBLIC_API_URL` (created manually)
 - [ ] `.env.example` committed as template
-- [ ] `generated.ts` is gitignored (regenerated from backend)
-- [ ] `openapi.json` is gitignored
+- [x] `generated.ts` is gitignored (regenerated from backend)
+- [x] `openapi.json` is gitignored
 
 ---
 
@@ -816,19 +816,19 @@ npm run build && npm run start
 ```
 
 **Phase 7 Complete When:**
-- [ ] Next.js project created with TypeScript + Tailwind + App Router
-- [ ] `@tanstack/react-query`, `openapi-fetch`, `openapi-typescript` installed
-- [ ] `npm run generate-api` generates types from backend OpenAPI spec
-- [ ] API client is type-safe (autocomplete for all endpoints)
-- [ ] React Query provider wraps the app
+- [x] Next.js project created with TypeScript + Tailwind + App Router
+- [x] `@tanstack/react-query`, `openapi-fetch`, `openapi-typescript` installed
+- [x] `npm run generate-api` generates types from backend OpenAPI spec
+- [x] API client is type-safe (autocomplete for all endpoints)
+- [x] React Query provider wraps the app
 - [ ] Chat page renders with header, messages, and input
 - [ ] Chat sends questions to `/api/v1/query` and displays SQL + table + explanation
 - [ ] Health badge shows real-time backend status
 - [ ] Analytics page fetches and displays summary statistics
 - [ ] Navbar navigation works between pages
-- [ ] RTL layout works for Persian text
+- [x] RTL layout works for Persian text (lang=fa, dir=rtl in layout.tsx)
 - [ ] Dark theme applied throughout
-- [ ] `.env.local` configures backend URL
+- [x] `.env.local` configures backend URL
 - [ ] `npm run build` succeeds without errors
 
 ---

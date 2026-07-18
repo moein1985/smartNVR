@@ -51,6 +51,7 @@ Domain (Entities, Repository Interfaces, Service Interfaces)
 | 4 | Flutter Client (Mobile + Desktop) | Planned | [Phase4_Flutter_Roadmap.md](Phase4_Flutter_Roadmap.md) |
 | 5 | POS Integration & Analytics | ✅ Complete | [Phase5_POS_Integration_Roadmap.md](Phase5_POS_Integration_Roadmap.md) |
 | 6 | Server Deployment (Docker) | ✅ Complete | [Phase6_Server_Deployment_Roadmap.md](Phase6_Server_Deployment_Roadmap.md) |
+| 7 | Web UI (Next.js) | 🔄 In Progress | [Phase7_Web_UI_Roadmap.md](Phase7_Web_UI_Roadmap.md) |
 
 ---
 
@@ -81,6 +82,7 @@ C:\Users\Moein\Documents\Codes\YOLO\
 ├── Phase4_Flutter_Roadmap.md             # Phase 4 detailed roadmap
 ├── Phase5_POS_Integration_Roadmap.md     # Phase 5 detailed roadmap
 ├── Phase6_Server_Deployment_Roadmap.md   # Phase 6 detailed roadmap
+├── Phase7_Web_UI_Roadmap.md             # Phase 7 detailed roadmap
 ├── frigate-config.yml                    # Frigate configuration (reference)
 ├── frigate-docker-compose.yml            # Docker compose (reference)
 ├── yolov9-t-320.onnx                     # ONNX model (reference)
