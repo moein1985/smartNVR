@@ -269,10 +269,10 @@ export function ChatView() {
 ```
 
 **Acceptance Criteria:**
-- [ ] Chat page renders with header, messages area, and input box
-- [ ] Layout is full-height flex column
-- [ ] RTL layout works correctly (Persian text direction)
-- [ ] Dark theme applied (gray-950 background)
+- [x] Chat page renders with header, messages area, and input box
+- [x] Layout is full-height flex column
+- [x] RTL layout works correctly (Persian text direction)
+- [x] Dark theme applied (gray-950 background)
 
 ---
 
@@ -465,15 +465,15 @@ export function ChatInput({ messages, setMessages }: ChatInputProps) {
 ```
 
 **Acceptance Criteria:**
-- [ ] `ChatHeader` shows app title and Persian subtitle
-- [ ] `ChatMessages` renders empty state with example question
-- [ ] `ChatBubble` displays user messages (right, cyan) and assistant messages (left, gray)
-- [ ] `ChatBubble` renders SQL in a code block with green syntax
-- [ ] `ChatBubble` renders result table with columns and rows (max 20 rows)
-- [ ] `ChatBubble` shows error in red when present
-- [ ] `ChatInput` sends question on Enter or button click
-- [ ] Input is disabled while mutation is pending
-- [ ] RTL layout works for Persian text
+- [x] `ChatHeader` shows app title and Persian subtitle
+- [x] `ChatMessages` renders empty state with example question
+- [x] `ChatBubble` displays user messages (right, cyan) and assistant messages (left, gray)
+- [x] `ChatBubble` renders SQL in a code block with green syntax
+- [x] `ChatBubble` renders result table with columns and rows (max 20 rows)
+- [x] `ChatBubble` shows error in red when present
+- [x] `ChatInput` sends question on Enter or button click
+- [x] Input is disabled while mutation is pending
+- [x] RTL layout works for Persian text
 
 ---
 
@@ -522,11 +522,11 @@ export function useHealth() {
 ```
 
 **Acceptance Criteria:**
-- [ ] `useSendQuery` is a mutation that POSTs to `/api/v1/query`
-- [ ] Request body is type-safe (autocomplete for `question` and `max_retries`)
-- [ ] Response is typed (autocomplete for `sql`, `columns`, `rows`, `explanation`)
-- [ ] `useHealth` polls `/api/v1/health` every 30 seconds
-- [ ] Error handling throws on non-2xx responses
+- [x] `useSendQuery` is a mutation that POSTs to `/api/v1/query`
+- [x] Request body is type-safe (autocomplete for `question` and `max_retries`)
+- [x] Response is typed (autocomplete for `sql`, `columns`, `rows`, `explanation`)
+- [x] `useHealth` polls `/api/v1/health` every 30 seconds
+- [x] Error handling throws on non-2xx responses
 
 ---
 
@@ -592,11 +592,11 @@ export function ChatHeader() {
 ```
 
 **Acceptance Criteria:**
-- [ ] Green dot when backend is online and DB connected
-- [ ] Yellow dot when backend is online but DB not connected
-- [ ] Red dot when backend is offline
-- [ ] Pulsing gray dot while connecting
-- [ ] Status auto-refreshes every 30 seconds
+- [x] Green dot when backend is online and DB connected
+- [x] Yellow dot when backend is online but DB not connected
+- [x] Red dot when backend is offline
+- [x] Pulsing gray dot while connecting
+- [x] Status auto-refreshes every 30 seconds
 
 ---
 
@@ -821,13 +821,13 @@ npm run build && npm run start
 - [x] `npm run generate-api` generates types from backend OpenAPI spec
 - [x] API client is type-safe (autocomplete for all endpoints)
 - [x] React Query provider wraps the app
-- [ ] Chat page renders with header, messages, and input
-- [ ] Chat sends questions to `/api/v1/query` and displays SQL + table + explanation
-- [ ] Health badge shows real-time backend status
-- [ ] Analytics page fetches and displays summary statistics
-- [ ] Navbar navigation works between pages
+- [x] Chat page renders with header, messages, and input
+- [x] Chat sends questions to `/api/v1/query` and displays SQL + table + explanation
+- [x] Health badge shows real-time backend status
+- [x] Analytics page fetches and displays summary statistics
+- [x] Navbar navigation works between pages
 - [x] RTL layout works for Persian text (lang=fa, dir=rtl in layout.tsx)
-- [ ] Dark theme applied throughout
+- [x] Dark theme applied throughout
 - [x] `.env.local` configures backend URL
 - [ ] `npm run build` succeeds without errors
 
