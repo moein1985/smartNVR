@@ -8,7 +8,7 @@ services:
     ports:
       - "8088:8000"
     volumes:
-      - /opt/frigate/config:/opt/frigate/config:ro
+      - /opt/frigate/config:/opt/frigate/config
     env_file:
       - .env
     networks:
