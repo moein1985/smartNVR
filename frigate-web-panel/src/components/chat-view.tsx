@@ -1,11 +1,16 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChatMessage, type ChatMessageData } from "./chat/chat-message";
 import { ChatInput } from "./chat/chat-input";
 import { HealthBadge } from "./health/health-badge";
+import { useSendQueryStream } from "@/hooks/use-send-query-stream";
+
+function genId() {
+  return Date.now().toString(36) + Math.random().toString(36).substring(2);
+}
 
 const SUGGESTED_PROMPTS = [
   "امروز چند نفر دیده شدند؟",
@@ -16,12 +21,69 @@ const SUGGESTED_PROMPTS = [
 
 export function ChatView() {
   const [messages, setMessages] = useState<ChatMessageData[]>([]);
-  const sendQueryRef = useRef<((q: string) => void) | null>(null);
+  const { mutate, isPending } = useSendQueryStream();
   const pathname = usePathname();
 
-  const handleSuggestedPrompt = (prompt: string) => {
-    sendQueryRef.current?.(prompt);
-  };
+  const sendQuery = useCallback(
+    (question: string) => {
+      if (!question.trim() || isPending) return;
+
+      const userMsg: ChatMessageData = {
+        id: genId(),
+        role: "user",
+        content: question,
+      };
+
+      const assistantId = genId();
+      const assistantMsg: ChatMessageData = {
+        id: assistantId,
+        role: "assistant",
+        content: "",
+      };
+
+      setMessages((prev) => [...prev, userMsg, assistantMsg]);
+
+      mutate(
+        { question },
+        {
+          onMeta: (meta) => {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantId
+                  ? {
+                      ...m,
+                      sql: meta.sql,
+                      columns: meta.columns,
+                      rows: meta.rows,
+                      error: meta.error ?? undefined,
+                    }
+                  : m
+              )
+            );
+          },
+          onChunk: (chunk) => {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantId
+                  ? { ...m, content: m.content + chunk }
+                  : m
+              )
+            );
+          },
+          onError: (err) => {
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantId
+                  ? { ...m, content: "خطا در ارتباط با سرور", error: err }
+                  : m
+              )
+            );
+          },
+        }
+      );
+    },
+    [isPending, mutate]
+  );
 
   return (
     <div className="flex flex-col h-screen max-w-4xl mx-auto">
@@ -69,7 +131,7 @@ export function ChatView() {
               {SUGGESTED_PROMPTS.map((prompt) => (
                 <button
                   key={prompt}
-                  onClick={() => handleSuggestedPrompt(prompt)}
+                  onClick={() => sendQuery(prompt)}
                   className="bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-full px-4 py-2 text-sm transition-colors"
                 >
                   {prompt}
@@ -83,7 +145,7 @@ export function ChatView() {
         ))}
       </div>
 
-      <ChatInput setMessages={setMessages} sendQueryRef={sendQueryRef} />
+      <ChatInput sendQuery={sendQuery} isPending={isPending} />
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from typing import Generator
 
@@ -6,6 +7,8 @@ from frigate_intelligence.domain.services.llm_service import LLMService
 from frigate_intelligence.domain.entities.query_result import QueryResult
 from frigate_intelligence.use_cases.text_to_sql.sql_validator import SQLValidator
 from frigate_intelligence.use_cases.text_to_sql.prompt_builder import PromptBuilder
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -46,6 +49,7 @@ class TextToSQLUseCase:
         system_prompt = self._prompt.as_system_prompt()
         attempts = 0
         last_error = ""
+        logger.info(f"Query received: {request.question}")
 
         for attempt in range(1, request.max_retries + 1):
             attempts = attempt
@@ -57,19 +61,23 @@ class TextToSQLUseCase:
 
             sql_raw = self._llm.generate_sql(user_msg, system_prompt)
             sql = self._extract_sql(sql_raw)
+            logger.info(f"Attempt {attempts} - Generated SQL: {sql}")
 
             is_valid, error = SQLValidator.validate(sql)
             if not is_valid:
                 last_error = f"Validation: {error}"
+                logger.warning(f"Attempt {attempts} - Validation error: {error}")
                 continue
 
             result = self._repo.execute_sql(sql)
             if not result.is_success:
                 last_error = f"Execution: {result.error}"
+                logger.warning(f"Attempt {attempts} - SQL execution error: {result.error}")
                 continue
 
             result_text = self._format_result(result)
             explanation = self._llm.explain_result(request.question, sql, result_text)
+            logger.info(f"Query succeeded: {result.row_count} rows, attempts={attempts}")
             return TextToSQLResponse(
                 question=request.question,
                 sql=sql,
@@ -78,6 +86,7 @@ class TextToSQLUseCase:
                 attempts=attempts,
             )
 
+        logger.error(f"Query failed after {attempts} attempts. Last error: {last_error}")
         return TextToSQLResponse(
             question=request.question,
             sql="",
@@ -96,6 +105,7 @@ class TextToSQLUseCase:
         system_prompt = self._prompt.as_system_prompt()
         attempts = 0
         last_error = ""
+        logger.info(f"Stream query received: {request.question}")
 
         for attempt in range(1, request.max_retries + 1):
             attempts = attempt
@@ -107,19 +117,23 @@ class TextToSQLUseCase:
 
             sql_raw = self._llm.generate_sql(user_msg, system_prompt)
             sql = self._extract_sql(sql_raw)
+            logger.info(f"Attempt {attempts} - Generated SQL: {sql}")
 
             is_valid, error = SQLValidator.validate(sql)
             if not is_valid:
                 last_error = f"Validation: {error}"
+                logger.warning(f"Attempt {attempts} - Validation error: {error}")
                 continue
 
             result = self._repo.execute_sql(sql)
             if not result.is_success:
                 last_error = f"Execution: {result.error}"
+                logger.warning(f"Attempt {attempts} - SQL execution error: {result.error}")
                 continue
 
             result_text = self._format_result(result)
             stream = self._llm.explain_result_stream(request.question, sql, result_text)
+            logger.info(f"Stream query succeeded: {result.row_count} rows, attempts={attempts}")
             return TextToSQLStreamResult(
                 question=request.question,
                 sql=sql,
@@ -128,6 +142,7 @@ class TextToSQLUseCase:
                 explanation_stream=stream,
             )
 
+        logger.error(f"Stream query failed after {attempts} attempts. Last error: {last_error}")
         return TextToSQLStreamResult(
             question=request.question,
             sql="",

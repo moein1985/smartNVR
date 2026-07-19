@@ -1,4 +1,5 @@
 import json
+import logging
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
@@ -15,6 +16,8 @@ from frigate_intelligence.interface_adapters.presenters.api_presenter import (
     APIPresenter,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class APIController:
     def __init__(self, text_to_sql_use_case: TextToSQLUseCase):
@@ -28,17 +31,21 @@ class APIController:
         self.router.add_api_route("/health", self.health, methods=["GET"])
 
     async def query(self, request: QueryRequest) -> QueryResponse:
+        logger.info(f"POST /query - question: {request.question}")
         req = TextToSQLRequest(
             question=request.question, max_retries=request.max_retries
         )
         response = self._use_case.execute(req)
+        logger.info(f"POST /query - completed: {response.attempts} attempts, {response.result.row_count} rows")
         return APIPresenter.to_query_response(response)
 
     async def query_stream(self, request: QueryRequest) -> StreamingResponse:
+        logger.info(f"POST /query/stream - question: {request.question}")
         req = TextToSQLRequest(
             question=request.question, max_retries=request.max_retries
         )
         result = self._use_case.execute_streaming(req)
+        logger.info(f"POST /query/stream - SQL: {result.sql}, attempts: {result.attempts}, rows: {result.result.row_count}")
 
         def event_stream():
             meta = {

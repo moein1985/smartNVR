@@ -1,3 +1,5 @@
+import logging
+import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -15,6 +17,12 @@ from frigate_intelligence.infrastructure.api.routes.analytics_routes import (
     create_analytics_router,
 )
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
+    stream=sys.stdout,
+)
+
 
 def create_app(container: Container) -> FastAPI:
     app = FastAPI(
@@ -25,13 +33,10 @@ def create_app(container: Container) -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[
-            "http://localhost:3000",
-            "http://127.0.0.1:3000",
-            "http://192.168.85.202:3000",
-        ],
+        allow_origins=["*"],
         allow_methods=["*"],
         allow_headers=["*"],
+        allow_credentials=True,
     )
 
     controller = APIController(container.text_to_sql_use_case)

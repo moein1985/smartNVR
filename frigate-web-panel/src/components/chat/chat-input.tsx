@@ -1,86 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSendQueryStream } from "@/hooks/use-send-query-stream";
-import type { ChatMessageData } from "./chat-message";
+import { useState } from "react";
 
 interface ChatInputProps {
-  setMessages: React.Dispatch<React.SetStateAction<ChatMessageData[]>>;
-  sendQueryRef?: React.MutableRefObject<((q: string) => void) | null>;
+  sendQuery: (question: string) => void;
+  isPending: boolean;
 }
 
-export function ChatInput({ setMessages, sendQueryRef }: ChatInputProps) {
+export function ChatInput({ sendQuery, isPending }: ChatInputProps) {
   const [input, setInput] = useState("");
-  const { mutate, isPending } = useSendQueryStream();
-
-  const sendQuery = (question: string) => {
-    if (!question.trim() || isPending) return;
-
-    const userMsg: ChatMessageData = {
-      id: crypto.randomUUID(),
-      role: "user",
-      content: question,
-    };
-
-    const assistantId = crypto.randomUUID();
-    const assistantMsg: ChatMessageData = {
-      id: assistantId,
-      role: "assistant",
-      content: "",
-    };
-
-    setMessages((prev) => [...prev, userMsg, assistantMsg]);
-    setInput("");
-
-    mutate(
-      { question },
-      {
-        onMeta: (meta) => {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantId
-                ? {
-                    ...m,
-                    sql: meta.sql,
-                    columns: meta.columns,
-                    rows: meta.rows,
-                    error: meta.error ?? undefined,
-                  }
-                : m
-            )
-          );
-        },
-        onChunk: (chunk) => {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantId
-                ? { ...m, content: m.content + chunk }
-                : m
-            )
-          );
-        },
-        onError: (err) => {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantId
-                ? { ...m, content: "خطا در ارتباط با سرور", error: err }
-                : m
-            )
-          );
-        },
-      }
-    );
-  };
-
-  useEffect(() => {
-    if (sendQueryRef) {
-      sendQueryRef.current = sendQuery;
-    }
-  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     sendQuery(input);
+    setInput("");
   };
 
   return (

@@ -11,6 +11,8 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_PUBLIC_API_URL=http://192.168.85.203:8088
+ENV NEXT_PUBLIC_FRIGATE_URL=http://192.168.85.203:5000
 RUN npx openapi-typescript http://192.168.85.203:8088/openapi.json -o src/lib/api/generated.ts || true
 RUN npm run build
 
