@@ -8,11 +8,11 @@ services:
     ports:
       - "8088:8000"
     volumes:
-      - /opt/frigate/config:/opt/frigate/config
+      - /opt/frigate/config:/opt/frigate/config:ro
     env_file:
       - .env
     networks:
-      - frigate-net
+      - frigate_default
 
   frigate-web-panel:
     build:
@@ -23,13 +23,13 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://192.168.85.202:8088
+      - NEXT_PUBLIC_API_URL=http://192.168.85.203:8088
       - NEXT_PUBLIC_FRIGATE_URL=http://192.168.85.203:5000
     depends_on:
       - frigate-intelligence
     networks:
-      - frigate-net
+      - frigate_default
 
 networks:
-  frigate-net:
-    driver: bridge
+  frigate_default:
+    external: true

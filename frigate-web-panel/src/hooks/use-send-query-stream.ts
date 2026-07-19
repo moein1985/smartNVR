@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 
 const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://192.168.85.202:8088";
+  process.env.NEXT_PUBLIC_API_URL || "http://192.168.85.203:8088";
 
 interface StreamCallbacks {
   onMeta?: (meta: {
