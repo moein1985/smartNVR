@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Generator
 
 from frigate_intelligence.domain.repositories.frigate_repository import FrigateRepository
 from frigate_intelligence.domain.services.llm_service import LLMService
@@ -20,6 +21,15 @@ class TextToSQLResponse:
     result: QueryResult
     explanation: str
     attempts: int
+
+
+@dataclass
+class TextToSQLStreamResult:
+    question: str
+    sql: str
+    result: QueryResult
+    attempts: int
+    explanation_stream: Generator[str, None, None]
 
 
 class TextToSQLUseCase:
@@ -80,6 +90,56 @@ class TextToSQLUseCase:
             ),
             explanation=f"Failed after {attempts} attempts. Last error: {last_error}",
             attempts=attempts,
+        )
+
+    def execute_streaming(self, request: TextToSQLRequest) -> TextToSQLStreamResult:
+        system_prompt = self._prompt.as_system_prompt()
+        attempts = 0
+        last_error = ""
+
+        for attempt in range(1, request.max_retries + 1):
+            attempts = attempt
+            user_msg = (
+                request.question
+                if attempt == 1
+                else f"{request.question}\n\nPrevious attempt failed: {last_error}\nPlease fix the SQL."
+            )
+
+            sql_raw = self._llm.generate_sql(user_msg, system_prompt)
+            sql = self._extract_sql(sql_raw)
+
+            is_valid, error = SQLValidator.validate(sql)
+            if not is_valid:
+                last_error = f"Validation: {error}"
+                continue
+
+            result = self._repo.execute_sql(sql)
+            if not result.is_success:
+                last_error = f"Execution: {result.error}"
+                continue
+
+            result_text = self._format_result(result)
+            stream = self._llm.explain_result_stream(request.question, sql, result_text)
+            return TextToSQLStreamResult(
+                question=request.question,
+                sql=sql,
+                result=result,
+                attempts=attempts,
+                explanation_stream=stream,
+            )
+
+        return TextToSQLStreamResult(
+            question=request.question,
+            sql="",
+            result=QueryResult(
+                sql="",
+                columns=[],
+                rows=[],
+                row_count=0,
+                error=last_error,
+            ),
+            attempts=attempts,
+            explanation_stream=iter([f"Failed after {attempts} attempts. Last error: {last_error}"]),
         )
 
     def _extract_sql(self, raw: str) -> str:

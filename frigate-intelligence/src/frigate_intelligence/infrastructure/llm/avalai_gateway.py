@@ -1,3 +1,5 @@
+from typing import Generator
+
 from openai import OpenAI
 
 
@@ -43,3 +45,27 @@ class AvalaiGateway:
             max_tokens=1000,
         )
         return response.choices[0].message.content.strip()
+
+    def explain_result_stream(
+        self, question: str, sql: str, result_text: str
+    ) -> Generator[str, None, None]:
+        stream = self._client.chat.completions.create(
+            model=self._model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a helpful assistant that explains database query results in natural language. Respond in the same language as the user's question.",
+                },
+                {
+                    "role": "user",
+                    "content": f"Question: {question}\nSQL: {sql}\nResults:\n{result_text}\n\nExplain these results in natural language.",
+                },
+            ],
+            temperature=0.3,
+            max_tokens=1000,
+            stream=True,
+        )
+        for chunk in stream:
+            delta = chunk.choices[0].delta.content
+            if delta:
+                yield delta

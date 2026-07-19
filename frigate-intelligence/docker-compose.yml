@@ -14,6 +14,22 @@ services:
     networks:
       - frigate-net
 
+  frigate-web-panel:
+    build:
+      context: ./frigate-web-panel
+      dockerfile: Dockerfile
+    container_name: frigate-web-panel
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://192.168.85.202:8088
+      - NEXT_PUBLIC_FRIGATE_URL=http://192.168.85.203:5000
+    depends_on:
+      - frigate-intelligence
+    networks:
+      - frigate-net
+
 networks:
   frigate-net:
     driver: bridge

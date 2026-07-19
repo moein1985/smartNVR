@@ -1,4 +1,4 @@
-from typing import Protocol
+from typing import Generator, Protocol
 
 
 class LLMService(Protocol):
@@ -8,4 +8,10 @@ class LLMService(Protocol):
 
     def explain_result(self, question: str, sql: str, result_text: str) -> str:
         """Generate a natural language explanation of query results."""
+        ...
+
+    def explain_result_stream(
+        self, question: str, sql: str, result_text: str
+    ) -> Generator[str, None, None]:
+        """Stream a natural language explanation token by token."""
         ...

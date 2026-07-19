@@ -10,8 +10,14 @@ export interface ChatMessageData {
   error?: string;
 }
 
+const FRIGATE_URL =
+  process.env.NEXT_PUBLIC_FRIGATE_URL || "http://192.168.85.203:5000";
+
 export function ChatMessage({ message }: { message: ChatMessageData }) {
   const isUser = message.role === "user";
+
+  const idColIndex = message.columns?.findIndex((c) => c === "id") ?? -1;
+  const hasSnapshots = idColIndex >= 0;
 
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
@@ -31,27 +37,46 @@ export function ChatMessage({ message }: { message: ChatMessageData }) {
         )}
 
         {message.columns && message.columns.length > 0 && (
-          <div className="mt-3 overflow-x-auto">
-            <table className="w-full text-xs">
+          <div className="mt-3 max-w-full overflow-x-auto">
+            <table className="text-xs">
               <thead>
                 <tr className="border-b border-gray-700">
+                  {hasSnapshots && <th className="px-2 py-1 text-left text-gray-400">تصویر</th>}
                   {message.columns.map((col, i) => (
-                    <th key={i} className="px-2 py-1 text-left text-gray-400">
+                    <th key={i} className="px-2 py-1 text-left text-gray-400 whitespace-nowrap">
                       {col}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {message.rows?.slice(0, 20).map((row, i) => (
-                  <tr key={i} className="border-b border-gray-800">
-                    {row.map((cell, j) => (
-                      <td key={j} className="px-2 py-1">
-                        {String(cell)}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
+                {message.rows?.slice(0, 20).map((row, i) => {
+                  const eventId = hasSnapshots ? String(row[idColIndex]) : null;
+                  return (
+                    <tr key={i} className="border-b border-gray-800">
+                      {hasSnapshots && (
+                        <td className="px-2 py-1">
+                          {eventId && (
+                            <img
+                              src={`${FRIGATE_URL}/api/events/${eventId}/snapshot.jpg`}
+                              alt={eventId}
+                              className="w-16 h-12 object-cover rounded"
+                              loading="lazy"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = "none";
+                              }}
+                            />
+                          )}
+                        </td>
+                      )}
+                      {row.map((cell, j) => (
+                        <td key={j} className="px-2 py-1 whitespace-nowrap max-w-xs truncate">
+                          {String(cell)}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

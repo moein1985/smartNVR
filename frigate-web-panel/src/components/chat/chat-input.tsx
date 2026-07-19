@@ -1,56 +1,86 @@
 "use client";
 
-import { useState } from "react";
-import { useSendQuery } from "@/hooks/use-send-query";
+import { useState, useEffect } from "react";
+import { useSendQueryStream } from "@/hooks/use-send-query-stream";
 import type { ChatMessageData } from "./chat-message";
 
 interface ChatInputProps {
   setMessages: React.Dispatch<React.SetStateAction<ChatMessageData[]>>;
+  sendQueryRef?: React.MutableRefObject<((q: string) => void) | null>;
 }
 
-export function ChatInput({ setMessages }: ChatInputProps) {
+export function ChatInput({ setMessages, sendQueryRef }: ChatInputProps) {
   const [input, setInput] = useState("");
-  const mutation = useSendQuery();
+  const { mutate, isPending } = useSendQueryStream();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || mutation.isPending) return;
+  const sendQuery = (question: string) => {
+    if (!question.trim() || isPending) return;
 
     const userMsg: ChatMessageData = {
       id: crypto.randomUUID(),
       role: "user",
-      content: input,
+      content: question,
     };
 
-    setMessages((prev) => [...prev, userMsg]);
+    const assistantId = crypto.randomUUID();
+    const assistantMsg: ChatMessageData = {
+      id: assistantId,
+      role: "assistant",
+      content: "",
+    };
+
+    setMessages((prev) => [...prev, userMsg, assistantMsg]);
     setInput("");
 
-    mutation.mutate(
-      { question: input },
+    mutate(
+      { question },
       {
-        onSuccess: (data) => {
-          const assistantMsg: ChatMessageData = {
-            id: crypto.randomUUID(),
-            role: "assistant",
-            content: data.explanation,
-            sql: data.sql,
-            columns: data.columns,
-            rows: data.rows,
-            error: data.error ?? undefined,
-          };
-          setMessages((prev) => [...prev, assistantMsg]);
+        onMeta: (meta) => {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId
+                ? {
+                    ...m,
+                    sql: meta.sql,
+                    columns: meta.columns,
+                    rows: meta.rows,
+                    error: meta.error ?? undefined,
+                  }
+                : m
+            )
+          );
+        },
+        onChunk: (chunk) => {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId
+                ? { ...m, content: m.content + chunk }
+                : m
+            )
+          );
         },
         onError: (err) => {
-          const errorMsg: ChatMessageData = {
-            id: crypto.randomUUID(),
-            role: "assistant",
-            content: "خطا در ارتباط با سرور",
-            error: String(err),
-          };
-          setMessages((prev) => [...prev, errorMsg]);
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId
+                ? { ...m, content: "خطا در ارتباط با سرور", error: err }
+                : m
+            )
+          );
         },
       }
     );
+  };
+
+  useEffect(() => {
+    if (sendQueryRef) {
+      sendQueryRef.current = sendQuery;
+    }
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    sendQuery(input);
   };
 
   return (
@@ -62,14 +92,14 @@ export function ChatInput({ setMessages }: ChatInputProps) {
           onChange={(e) => setInput(e.target.value)}
           placeholder="سوال خود را بنویسید..."
           className="flex-1 bg-gray-800 text-gray-100 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-500"
-          disabled={mutation.isPending}
+          disabled={isPending}
         />
         <button
           type="submit"
-          disabled={mutation.isPending || !input.trim()}
+          disabled={isPending || !input.trim()}
           className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white rounded-xl px-6 py-3 font-medium transition-colors"
         >
-          {mutation.isPending ? "..." : "ارسال"}
+          {isPending ? "..." : "ارسال"}
         </button>
       </div>
     </form>
