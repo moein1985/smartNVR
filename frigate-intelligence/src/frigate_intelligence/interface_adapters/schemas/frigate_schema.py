@@ -30,7 +30,7 @@ SELECT AVG(json_extract(data, '$.score')) as avg_score FROM event WHERE label='p
 -- Get recordings with objects
 SELECT id, camera, path, datetime(start_time, 'unixepoch', 'localtime') as start_time, duration, objects, motion FROM recordings WHERE objects > 0 ORDER BY start_time DESC;
 
--- Events in time range (with formatted timestamps)
+-- Events in time range (with id for snapshots and formatted timestamps)
 SELECT id, label, camera, datetime(start_time, 'unixepoch', 'localtime') as start_time FROM event WHERE start_time BETWEEN 1784377610 AND 1784386200 ORDER BY start_time DESC;
 
 -- Peak hour for detections
@@ -49,4 +49,5 @@ SQL_RULES = """1. Generate ONLY SELECT queries. No INSERT, UPDATE, DELETE, DROP,
 7. Do not use markdown code fences in output. Return raw SQL only.
 8. If a query returns NULL or 0 rows, do NOT conclude that no data exists. The column itself may be unused. Consider alternative columns or JSON extraction.
 9. For 'today' filters use: start_time >= strftime('%s', 'now', 'start of day').
-10. For 'last hour' filters use: start_time >= strftime('%s', 'now') - 3600."""
+10. For 'last hour' filters use: start_time >= strftime('%s', 'now') - 3600.
+11. CRITICAL: If the user asks about specific events, recent detections, or asks to 'see' or 'show' something, you MUST include the event `id` column in your SELECT statement. The frontend uses this `id` to render snapshot images. Example: SELECT id, camera, datetime(start_time, 'unixepoch', 'localtime') as time FROM event WHERE label='person' ORDER BY start_time DESC LIMIT 10;"""
