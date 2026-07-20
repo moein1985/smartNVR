@@ -58,4 +58,65 @@ class MockApiClient implements BaseApiClient {
     await Future.delayed(const Duration(milliseconds: 500));
     return {'status': 'ok', 'db_connected': true};
   }
+
+  @override
+  Future<Map<String, dynamic>> getCameras() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return {
+      'cameras': [
+        {
+          'name': 'cam1',
+          'enabled': true,
+          'detect': {
+            'width': 640,
+            'height': 480,
+            'fps': 5,
+            'objects': ['person', 'car', 'motorcycle', 'bicycle', 'dog', 'cat'],
+          },
+          'zones': ['parking_1', 'main_gate'],
+          'live_stream_name': 'cam1',
+        },
+      ],
+      'total': 1,
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> getRecordings({
+    String? camera,
+    String? date,
+    int? hour,
+    double? startTime,
+    double? endTime,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return {
+      'segments': [
+        {
+          'id': 'mock_rec_1',
+          'camera': 'cam1',
+          'path': '/media/frigate/recordings/2026-07-20/11/cam1/00.04.mp4',
+          'start_time': 1784545204.0,
+          'end_time': 1784545213.99,
+          'duration': 9.99,
+          'objects': 0,
+          'motion': 89,
+        },
+        {
+          'id': 'mock_rec_2',
+          'camera': 'cam1',
+          'path': '/media/frigate/recordings/2026-07-20/11/cam1/00.14.mp4',
+          'start_time': 1784545214.0,
+          'end_time': 1784545223.99,
+          'duration': 9.99,
+          'objects': 1,
+          'motion': 92,
+        },
+      ],
+      'total': 2,
+      'camera': camera ?? 'all',
+      'date': date,
+      'hour': hour,
+    };
+  }
 }

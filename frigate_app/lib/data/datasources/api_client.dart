@@ -9,6 +9,14 @@ abstract class BaseApiClient {
     String? label,
   });
   Future<Map<String, dynamic>> health();
+  Future<Map<String, dynamic>> getCameras();
+  Future<Map<String, dynamic>> getRecordings({
+    String? camera,
+    String? date,
+    int? hour,
+    double? startTime,
+    double? endTime,
+  });
 }
 
 class ApiClient implements BaseApiClient {
@@ -59,6 +67,31 @@ class ApiClient implements BaseApiClient {
   @override
   Future<Map<String, dynamic>> health() async {
     final response = await _dio.get('/api/v1/health');
+    return response.data as Map<String, dynamic>;
+  }
+
+  @override
+  Future<Map<String, dynamic>> getCameras() async {
+    final response = await _dio.get('/api/v1/cameras');
+    return response.data as Map<String, dynamic>;
+  }
+
+  @override
+  Future<Map<String, dynamic>> getRecordings({
+    String? camera,
+    String? date,
+    int? hour,
+    double? startTime,
+    double? endTime,
+  }) async {
+    final params = <String, dynamic>{
+      if (camera != null) 'camera': camera,
+      if (date != null) 'date': date,
+      if (hour != null) 'hour': hour,
+      if (startTime != null) 'start_time': startTime,
+      if (endTime != null) 'end_time': endTime,
+    };
+    final response = await _dio.get('/api/v1/recordings', queryParameters: params);
     return response.data as Map<String, dynamic>;
   }
 }

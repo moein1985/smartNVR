@@ -1,7 +1,7 @@
 # Phase 10: Flutter NVR App — Dual-Tab Architecture
 
-**Status:** Planning — Approved  
-**Date:** July 20, 2026  
+**Status:** ✅ Completed  
+**Date Completed:** July 20, 2026  
 **Target Device:** Android (Samsung SM-S938B, `R5CY23R9DXR`)  
 **Prerequisites:** Phase 9 complete (go2rtc configured, multi-class detection active, zones defined, `/api/v1/recordings` and `/api/v1/cameras` endpoints live)
 
@@ -516,10 +516,10 @@ void _playSegment(int index) {
 
 | Step | Description | Type | Status |
 |------|-------------|------|--------|
-| 10.1 | Add dependencies (flutter_webrtc, media_kit, etc.) | pubspec.yaml | [ ] |
-| 10.2 | Scaffold dual-tab architecture (BottomNavigationBar) | Dart code | [ ] |
-| 10.3 | Full-screen image gallery (PageView + InteractiveViewer) | Dart code | [ ] |
-| 10.4 | Inline video clip playback (media_kit) | Dart code | [ ] |
-| 10.5 | Live View tab — WebRTC streaming (flutter_webrtc) | Dart code | [ ] |
-| 10.6 | VOD Playback tab — timeline + segment chaining (media_kit) | Dart code | [ ] |
-| 10.7 | Polish, error handling, Persian localization | Dart code | [ ] |
+| 10.1 | Add dependencies (flutter_webrtc, media_kit, etc.) | pubspec.yaml | [x] |
+| 10.2 | Scaffold dual-tab architecture (BottomNavigationBar) | Dart code | [x] |
+| 10.3 | Full-screen image gallery (PageView + InteractiveViewer) | Dart code | [x] |
+| 10.4 | Inline video clip playback (media_kit) | Dart code | [x] |
+| 10.5 | Live View tab — WebRTC streaming (flutter_webrtc) | Dart code | [x] |
+| 10.6 | VOD Playback tab — timeline + segment chaining (media_kit) | Dart code | [x] |
+| 10.7 | Polish, error handling, Persian localization | Dart code | [x] |

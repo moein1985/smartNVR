@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../providers/chat_provider.dart';
+import 'full_screen_gallery.dart';
+import 'inline_clip_player.dart';
 
 class ChatBubble extends StatelessWidget {
   final ChatMessage message;
@@ -112,30 +115,52 @@ class _EventGallery extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(24),
-                ),
-                child: isMockMode
-                    ? Image.network(
-                        'https://picsum.photos/seed/$eventId/400/300',
+              GestureDetector(
+                onTap: () {
+                  final imageUrls = rows.map((r) {
+                    final id = r['id']?.toString() ?? 'unknown';
+                    return isMockMode
+                        ? 'https://picsum.photos/seed/$id/800/600'
+                        : 'http://$serverIp:5000/api/events/$id/snapshot.jpg';
+                  }).toList();
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => FullScreenGallery(
+                        imageUrls: imageUrls,
+                        initialIndex: rows.indexOf(row),
+                      ),
+                    ),
+                  );
+                },
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(24),
+                      ),
+                      child: CachedNetworkImage(
+                        imageUrl: isMockMode
+                            ? 'https://picsum.photos/seed/$eventId/400/300'
+                            : 'http://$serverIp:5000/api/events/$eventId/snapshot.jpg',
                         width: 160,
                         height: 110,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Container(
+                        placeholder: (_, _) => Container(
                           width: 160,
                           height: 110,
                           color: colorScheme.surfaceContainerHighest,
-                          child: Icon(Icons.broken_image,
-                              color: colorScheme.outline),
+                          child: Center(
+                            child: SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: colorScheme.outline,
+                              ),
+                            ),
+                          ),
                         ),
-                      )
-                    : Image.network(
-                        'http://$serverIp:5000/api/events/$eventId/snapshot.jpg',
-                        width: 160,
-                        height: 110,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Container(
+                        errorWidget: (_, _, _) => Container(
                           width: 160,
                           height: 110,
                           color: colorScheme.surfaceContainerHighest,
@@ -143,6 +168,52 @@ class _EventGallery extends StatelessWidget {
                               color: colorScheme.outline),
                         ),
                       ),
+                    ),
+                    Positioned.fill(
+                      child: Align(
+                        alignment: Alignment.bottomRight,
+                        child: Padding(
+                          padding: const EdgeInsets.all(6),
+                          child: GestureDetector(
+                            onTap: () {
+                              final clipUrl = isMockMode
+                                  ? 'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4'
+                                  : 'http://$serverIp:5000/api/events/$eventId/clip.mp4';
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) => Scaffold(
+                                    backgroundColor: Colors.black,
+                                    appBar: AppBar(
+                                      backgroundColor: Colors.black54,
+                                      foregroundColor: Colors.white,
+                                      title: Text('$label - $camera'),
+                                      leading: IconButton(
+                                        icon: const Icon(Icons.close),
+                                        onPressed: () => Navigator.of(context).pop(),
+                                      ),
+                                    ),
+                                    body: Center(
+                                      child: InlineClipPlayer(clipUrl: clipUrl),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.black54,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Icon(Icons.play_circle_fill,
+                                  color: Colors.white, size: 20),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               Padding(
                 padding:
