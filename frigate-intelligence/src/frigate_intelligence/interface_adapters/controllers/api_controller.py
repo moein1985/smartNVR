@@ -15,13 +15,22 @@ from frigate_intelligence.interface_adapters.schemas.api_models import (
 from frigate_intelligence.interface_adapters.presenters.api_presenter import (
     APIPresenter,
 )
+from frigate_intelligence.domain.models.settings_model import SettingsModel
+from frigate_intelligence.infrastructure.config.settings_manager import (
+    SettingsManager,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class APIController:
-    def __init__(self, text_to_sql_use_case: TextToSQLUseCase):
+    def __init__(
+        self,
+        text_to_sql_use_case: TextToSQLUseCase,
+        settings_manager: SettingsManager | None = None,
+    ):
         self._use_case = text_to_sql_use_case
+        self._settings_manager = settings_manager or SettingsManager()
         self.router = APIRouter(prefix="/api/v1", tags=["intelligence"])
         self._register_routes()
 
@@ -29,6 +38,8 @@ class APIController:
         self.router.add_api_route("/query", self.query, methods=["POST"])
         self.router.add_api_route("/query/stream", self.query_stream, methods=["POST"])
         self.router.add_api_route("/health", self.health, methods=["GET"])
+        self.router.add_api_route("/settings", self.get_settings, methods=["GET"])
+        self.router.add_api_route("/settings", self.update_settings, methods=["POST"])
 
     async def query(self, request: QueryRequest) -> QueryResponse:
         logger.info(f"POST /query - question: {request.question}")
@@ -77,3 +88,12 @@ class APIController:
         return HealthResponse(
             status="ok", version="0.1.0", db_connected=True
         )
+
+    async def get_settings(self) -> SettingsModel:
+        logger.info("GET /settings")
+        return self._settings_manager.load()
+
+    async def update_settings(self, settings: SettingsModel) -> dict:
+        logger.info("POST /settings")
+        self._settings_manager.save(settings)
+        return {"status": "ok", "message": "Settings saved successfully"}

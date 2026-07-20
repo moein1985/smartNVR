@@ -7,6 +7,9 @@ from frigate_intelligence.config.dependencies import Container
 from frigate_intelligence.interface_adapters.controllers.api_controller import (
     APIController,
 )
+from frigate_intelligence.infrastructure.config.settings_manager import (
+    SettingsManager,
+)
 from frigate_intelligence.infrastructure.api.routes.event_routes import (
     create_event_router,
 )
@@ -39,7 +42,10 @@ def create_app(container: Container) -> FastAPI:
         allow_credentials=True,
     )
 
-    controller = APIController(container.text_to_sql_use_case)
+    controller = APIController(
+        container.text_to_sql_use_case,
+        settings_manager=SettingsManager(),
+    )
     app.include_router(controller.router)
 
     event_router = create_event_router(container.frigate_repo)
