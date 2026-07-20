@@ -138,7 +138,7 @@ class APIController:
         import httpx
         try:
             async with httpx.AsyncClient(timeout=10) as client:
-                resp = await client.get("http://localhost:5000/api/config")
+                resp = await client.get("http://frigate:5000/api/config")
                 config = resp.json()
         except Exception as e:
             logger.error(f"Failed to fetch Frigate config: {e}")

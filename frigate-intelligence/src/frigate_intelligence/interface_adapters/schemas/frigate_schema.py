@@ -24,7 +24,7 @@ Labels: person, car, motorcycle, bicycle, dog, cat
 Zones: configured via Frigate UI (e.g., parking_1, main_gate)"""
 
 
-def get_frigate_zones(frigate_url: str = "http://localhost:5000") -> str:
+def get_frigate_zones(frigate_url: str = "http://frigate:5000") -> str:
     """Fetch zone names from Frigate API for LLM context."""
     try:
         config = json.loads(

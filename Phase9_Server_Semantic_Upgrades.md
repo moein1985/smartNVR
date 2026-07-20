@@ -1,7 +1,7 @@
 # Phase 9: Server-Side Semantic Upgrades (Frigate + FastAPI)
 
-**Status:** Planning — Approved  
-**Date:** July 20, 2026  
+**Status:** ✅ Completed  
+**Date Completed:** July 20, 2026  
 **Target Server:** `192.168.85.203`  
 **Prerequisites:** Phase 8 complete (production deployment running)
 
@@ -431,8 +431,8 @@ async def get_cameras():
 |------|-------------|------|--------|
 | 9.1 | Configure go2rtc live streaming | Frigate config | [x] |
 | 9.2 | Enable multi-class object detection | Frigate config | [x] |
-| 9.3 | Define zones via Frigate UI | Manual (user) | [ ] |
+| 9.3 | Define zones via Frigate UI | Manual (user) | [x] |
 | 9.4 | Update LLM schema context (zones, labels, sample queries) | Python code | [x] |
 | 9.5 | Add `/api/v1/recordings` endpoint | Python code | [x] |
 | 9.6 | Add `/api/v1/cameras` endpoint | Python code | [x] |
-| 9.7 | Deploy and verify all changes | Deployment | [ ] |
+| 9.7 | Deploy and verify all changes | Deployment | [x] |
