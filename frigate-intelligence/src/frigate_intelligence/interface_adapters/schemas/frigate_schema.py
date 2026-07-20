@@ -1,4 +1,9 @@
+import json
+import logging
+import urllib.request
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 SCHEMA_REPORT_PATH = (
     Path(__file__).parent.parent.parent.parent.parent.parent
@@ -15,7 +20,25 @@ Tables: event, recordings, timeline, reviewsegment, previews, regions, user
 Key table: event (id VARCHAR, label VARCHAR, camera VARCHAR, start_time DATETIME, end_time DATETIME, score REAL, zones JSON, data JSON)
 Time format: Unix timestamps (float, seconds since epoch)
 Camera: cam1
-Labels: person"""
+Labels: person, car, motorcycle, bicycle, dog, cat
+Zones: configured via Frigate UI (e.g., parking_1, main_gate)"""
+
+
+def get_frigate_zones(frigate_url: str = "http://localhost:5000") -> str:
+    """Fetch zone names from Frigate API for LLM context."""
+    try:
+        config = json.loads(
+            urllib.request.urlopen(f"{frigate_url}/api/config", timeout=5).read()
+        )
+        zones = []
+        for cam_name, cam in config.get("cameras", {}).items():
+            for zone_name in cam.get("zones", {}):
+                zones.append(f"{zone_name} (camera: {cam_name})")
+        if zones:
+            return "Available zones: " + ", ".join(zones)
+    except Exception as e:
+        logger.debug(f"Could not fetch zones from Frigate API: {e}")
+    return "Available zones: (none configured yet — ask user to define zones in Frigate UI)"
 
 
 SAMPLE_QUERIES = """-- Get latest person detections (timestamps formatted for readability)
@@ -37,7 +60,35 @@ SELECT id, label, camera, datetime(start_time, 'unixepoch', 'localtime') as star
 SELECT strftime('%H', start_time, 'unixepoch') as hour, COUNT(*) as count FROM event GROUP BY hour ORDER BY count DESC LIMIT 10;
 
 -- Timeline for specific event
-SELECT datetime(timestamp, 'unixepoch', 'localtime') as timestamp, class_type, data FROM timeline WHERE source_id='1784386154.716448-7wjons' ORDER BY timestamp ASC;"""
+SELECT datetime(timestamp, 'unixepoch', 'localtime') as timestamp, class_type, data FROM timeline WHERE source_id='1784386154.716448-7wjons' ORDER BY timestamp ASC;
+
+-- Count cars in a specific zone (using LIKE for simplicity)
+SELECT COUNT(*) as count FROM event WHERE label='car' AND zones LIKE '%parking_1%';
+
+-- Events by zone and label in last 24 hours
+SELECT label, zones, COUNT(*) as count FROM event
+WHERE start_time > strftime('%s','now','-1 day')
+GROUP BY label, zones;
+
+-- Zone entry events using json_each (precise zone matching)
+SELECT id, label, camera, datetime(start_time, 'unixepoch', 'localtime') as start
+FROM event
+WHERE EXISTS (SELECT 1 FROM json_each(zones) WHERE value='main_gate')
+ORDER BY start_time DESC LIMIT 50;
+
+-- Detections by camera and label with zone info
+SELECT camera, label, zones, COUNT(*) as count, MAX(json_extract(data, '$.score')) as max_score
+FROM event
+WHERE start_time > strftime('%s','now','-7 days')
+GROUP BY camera, label, zones
+ORDER BY count DESC;
+
+-- Hourly detection count by label
+SELECT label, strftime('%H', datetime(start_time, 'unixepoch', 'localtime')) as hour, COUNT(*) as count
+FROM event
+WHERE start_time > strftime('%s','now','-1 day')
+GROUP BY label, hour
+ORDER BY hour;"""
 
 
 SQL_RULES = """1. Generate ONLY SELECT queries. No INSERT, UPDATE, DELETE, DROP, ALTER, or ATTACH.
@@ -50,4 +101,8 @@ SQL_RULES = """1. Generate ONLY SELECT queries. No INSERT, UPDATE, DELETE, DROP,
 8. If a query returns NULL or 0 rows, do NOT conclude that no data exists. The column itself may be unused. Consider alternative columns or JSON extraction.
 9. For 'today' filters use: start_time >= strftime('%s', 'now', 'start of day').
 10. For 'last hour' filters use: start_time >= strftime('%s', 'now') - 3600.
-11. CRITICAL: If the user asks about specific events, recent detections, or asks to 'see' or 'show' something, you MUST include the event `id` column in your SELECT statement. The frontend uses this `id` to render snapshot images. Example: SELECT id, camera, datetime(start_time, 'unixepoch', 'localtime') as time FROM event WHERE label='person' ORDER BY start_time DESC LIMIT 10;"""
+11. CRITICAL: If the user asks about specific events, recent detections, or asks to 'see' or 'show' something, you MUST include the event `id` column in your SELECT statement. The frontend uses this `id` to render snapshot images. Example: SELECT id, camera, datetime(start_time, 'unixepoch', 'localtime') as time FROM event WHERE label='person' ORDER BY start_time DESC LIMIT 10;
+12. The `zones` column is a JSON array (e.g., ["parking_1"]). Use `LIKE '%zone_name%'` for simple filtering or `EXISTS (SELECT 1 FROM json_each(zones) WHERE value='zone_name')` for precise matching.
+13. Available detection labels: person, car, motorcycle, bicycle, dog, cat.
+14. Available zones: parking_1, main_gate (defined in Frigate config). If the user mentions a zone by description (e.g., "parking area"), map it to the closest zone name.
+15. The `recordings` table has `path`, `start_time`, `end_time`, `duration` for 10-second MP4 segments stored at /media/frigate/recordings/YYYY-MM-DD/HH/<camera>/MM.SS.mp4."""

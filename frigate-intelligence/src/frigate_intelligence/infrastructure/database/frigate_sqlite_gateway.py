@@ -71,6 +71,53 @@ class FrigateSqliteGateway:
             return []
         return [self._row_to_recording(r) for r in result.rows]
 
+    def get_recording_segments(
+        self,
+        camera: str | None = None,
+        date: str | None = None,
+        hour: int | None = None,
+        start_time: float | None = None,
+        end_time: float | None = None,
+        limit: int = 500,
+    ) -> list[dict]:
+        """Query recordings table for VOD segments with flexible filtering."""
+        sql = (
+            "SELECT id, camera, path, start_time, end_time, "
+            "duration, objects, motion FROM recordings"
+        )
+        conditions: list[str] = []
+        params: list = []
+
+        if camera:
+            conditions.append("camera = ?")
+            params.append(camera)
+        if start_time is not None:
+            conditions.append("start_time >= ?")
+            params.append(start_time)
+        if end_time is not None:
+            conditions.append("end_time <= ?")
+            params.append(end_time)
+        if date:
+            conditions.append("date(start_time, 'unixepoch', 'localtime') = ?")
+            params.append(date)
+        if hour is not None:
+            conditions.append(
+                "strftime('%H', datetime(start_time, 'unixepoch', 'localtime')) = ?"
+            )
+            params.append(f"{hour:02d}")
+
+        if conditions:
+            sql += " WHERE " + " AND ".join(conditions)
+        sql += " ORDER BY start_time ASC LIMIT ?"
+        params.append(limit)
+
+        result = self.execute_sql(sql, tuple(params))
+        if result.error:
+            return []
+
+        columns = result.columns
+        return [dict(zip(columns, row)) for row in result.rows]
+
     def _row_to_event(self, row: tuple) -> Event:
         return Event(
             id=row[0],

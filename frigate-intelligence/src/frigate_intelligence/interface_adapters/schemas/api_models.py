@@ -41,3 +41,22 @@ class HealthResponse(BaseModel):
     status: str
     version: str
     db_connected: bool
+
+
+class RecordingSegment(BaseModel):
+    id: str
+    camera: str
+    path: str
+    start_time: float
+    end_time: float
+    duration: float
+    objects: int | None = None
+    motion: int | None = None
+
+
+class RecordingListResponse(BaseModel):
+    segments: list[RecordingSegment]
+    total: int
+    camera: str
+    date: str | None = None
+    hour: int | None = None

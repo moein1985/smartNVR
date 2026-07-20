@@ -11,6 +11,8 @@ from frigate_intelligence.interface_adapters.schemas.api_models import (
     QueryRequest,
     QueryResponse,
     HealthResponse,
+    RecordingSegment,
+    RecordingListResponse,
 )
 from frigate_intelligence.interface_adapters.presenters.api_presenter import (
     APIPresenter,
@@ -28,9 +30,11 @@ class APIController:
         self,
         text_to_sql_use_case: TextToSQLUseCase,
         settings_manager: SettingsManager | None = None,
+        frigate_repo: object | None = None,
     ):
         self._use_case = text_to_sql_use_case
         self._settings_manager = settings_manager or SettingsManager()
+        self._frigate_repo = frigate_repo
         self.router = APIRouter(prefix="/api/v1", tags=["intelligence"])
         self._register_routes()
 
@@ -40,6 +44,8 @@ class APIController:
         self.router.add_api_route("/health", self.health, methods=["GET"])
         self.router.add_api_route("/settings", self.get_settings, methods=["GET"])
         self.router.add_api_route("/settings", self.update_settings, methods=["POST"])
+        self.router.add_api_route("/recordings", self.get_recordings, methods=["GET"])
+        self.router.add_api_route("/cameras", self.get_cameras, methods=["GET"])
 
     async def query(self, request: QueryRequest) -> QueryResponse:
         logger.info(f"POST /query - question: {request.question}")
@@ -97,3 +103,61 @@ class APIController:
         logger.info("POST /settings")
         self._settings_manager.save(settings)
         return {"status": "ok", "message": "Settings saved successfully"}
+
+    async def get_recordings(
+        self,
+        camera: str | None = None,
+        date: str | None = None,
+        hour: int | None = None,
+        start_time: float | None = None,
+        end_time: float | None = None,
+    ) -> RecordingListResponse:
+        logger.info(
+            f"GET /recordings - camera={camera}, date={date}, hour={hour}"
+        )
+        if self._frigate_repo is None:
+            return RecordingListResponse(segments=[], total=0, camera=camera or "all", date=date, hour=hour)
+        segments = self._frigate_repo.get_recording_segments(
+            camera=camera,
+            date=date,
+            hour=hour,
+            start_time=start_time,
+            end_time=end_time,
+        )
+        logger.info(f"GET /recordings - returned {len(segments)} segments")
+        return RecordingListResponse(
+            segments=[RecordingSegment(**s) for s in segments],
+            total=len(segments),
+            camera=camera or "all",
+            date=date,
+            hour=hour,
+        )
+
+    async def get_cameras(self) -> dict:
+        logger.info("GET /cameras")
+        import httpx
+        try:
+            async with httpx.AsyncClient(timeout=10) as client:
+                resp = await client.get("http://localhost:5000/api/config")
+                config = resp.json()
+        except Exception as e:
+            logger.error(f"Failed to fetch Frigate config: {e}")
+            return {"cameras": [], "total": 0, "error": str(e)}
+
+        cameras = []
+        for cam_name, cam in config.get("cameras", {}).items():
+            cameras.append({
+                "name": cam_name,
+                "enabled": cam.get("enabled", False),
+                "detect": {
+                    "width": cam.get("detect", {}).get("width", 0),
+                    "height": cam.get("detect", {}).get("height", 0),
+                    "fps": cam.get("detect", {}).get("fps", 0),
+                    "objects": cam.get("detect", {}).get("objects", ["person"]),
+                },
+                "zones": list(cam.get("zones", {}).keys()),
+                "live_stream_name": cam.get("live", {}).get("stream_name", cam_name),
+            })
+
+        logger.info(f"GET /cameras - returned {len(cameras)} cameras")
+        return {"cameras": cameras, "total": len(cameras)}

@@ -45,6 +45,7 @@ def create_app(container: Container) -> FastAPI:
     controller = APIController(
         container.text_to_sql_use_case,
         settings_manager=SettingsManager(),
+        frigate_repo=container.frigate_repo,
     )
     app.include_router(controller.router)
 

@@ -12,6 +12,15 @@ model:
   width: 320
   height: 320
 
+go2rtc:
+  streams:
+    cam1:
+      - rtsp://admin:admin123@192.168.85.112:554/Streaming/Channels/101
+      - "ffmpeg:cam1#audio=opus"
+  webrtc:
+    candidates:
+      - 192.168.85.203:8555
+
 mqtt:
   enabled: false
 
@@ -33,6 +42,13 @@ cameras:
       width: 640
       height: 480
       fps: 5
+      objects:
+        - person
+        - car
+        - motorcycle
+        - bicycle
+        - dog
+        - cat
     record:
       enabled: true
       retain:
