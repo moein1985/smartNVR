@@ -52,10 +52,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     final colorScheme = theme.colorScheme;
     final chatState = ref.watch(chatNotifierProvider);
     final configAsync = ref.watch(serverConfigProvider);
-    final isMockMode = configAsync.maybeWhen(
-      data: (c) => c.isMockMode,
-      orElse: () => false,
+    final serverConfig = configAsync.maybeWhen(
+      data: (c) => c,
+      orElse: () => null,
     );
+    final isMockMode = serverConfig?.isMockMode ?? false;
+    final serverIp = serverConfig?.ip ?? '';
 
     return Scaffold(
       appBar: AppBar(
@@ -109,6 +111,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                 return ChatBubble(
                   message: chatState.messages[index],
                   isMockMode: isMockMode,
+                  serverIp: serverIp,
                 );
               },
             ),

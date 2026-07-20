@@ -5,11 +5,13 @@ import '../providers/chat_provider.dart';
 class ChatBubble extends StatelessWidget {
   final ChatMessage message;
   final bool isMockMode;
+  final String serverIp;
 
   const ChatBubble({
     super.key,
     required this.message,
     this.isMockMode = false,
+    this.serverIp = '',
   });
 
   @override
@@ -69,7 +71,7 @@ class ChatBubble extends StatelessWidget {
               ),
             if (message.hasEvents) ...[
               const SizedBox(height: 12),
-              _EventGallery(message: message, isMockMode: isMockMode),
+              _EventGallery(message: message, isMockMode: isMockMode, serverIp: serverIp),
             ],
           ],
         ),
@@ -81,8 +83,9 @@ class ChatBubble extends StatelessWidget {
 class _EventGallery extends StatelessWidget {
   final ChatMessage message;
   final bool isMockMode;
+  final String serverIp;
 
-  const _EventGallery({required this.message, required this.isMockMode});
+  const _EventGallery({required this.message, required this.isMockMode, required this.serverIp});
 
   @override
   Widget build(BuildContext context) {
@@ -128,15 +131,16 @@ class _EventGallery extends StatelessWidget {
                         ),
                       )
                     : Image.network(
-                        'http://192.168.85.203:5000/api/events/$eventId/snapshot.jpg',
+                        'http://$serverIp:5000/api/events/$eventId/snapshot.jpg',
                         width: 160,
                         height: 110,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Image.network(
-                          'https://picsum.photos/seed/$eventId/400/300',
+                        errorBuilder: (_, _, _) => Container(
                           width: 160,
                           height: 110,
-                          fit: BoxFit.cover,
+                          color: colorScheme.surfaceContainerHighest,
+                          child: Icon(Icons.broken_image,
+                              color: colorScheme.outline),
                         ),
                       ),
               ),

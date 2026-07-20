@@ -1,5 +1,14 @@
 # Phase 1: CLI Text-to-SQL Agent — Detailed Roadmap
 
+**Status:** ✅ Completed  
+**Date Completed:** July 2026
+
+## Architectural Pivots (Phase 1)
+- Settings originally planned via `.env` + `pydantic-settings` only. Later extended with `SettingsManager` (JSON persistence) + REST API for dynamic configuration (see Phase 8).
+- Domain model `Event` entity fields adjusted to match actual Frigate DB schema during implementation.
+
+---
+
 ## Objective
 
 Build a CLI tool that accepts natural language questions (Persian/English), converts them to SQL via LLM (ReAct pattern), executes on Frigate SQLite DB, and returns formatted results.

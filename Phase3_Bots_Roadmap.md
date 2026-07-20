@@ -1,5 +1,15 @@
 # Phase 3: Messaging Bots (Telegram + Bale) — Detailed Roadmap
 
+**Status:** ✅ Completed  
+**Date Completed:** July 2026
+
+## Architectural Pivots (Phase 3)
+- Added `BotNotificationService` (httpx-based async HTTP) in `infrastructure/notifications/` alongside existing `telegram_notifier.py` and `bale_notifier.py`.
+- Bot tokens and chat IDs moved from `.env` to `settings.json` (managed via REST API) for dynamic configuration.
+- `CronService` (APScheduler) added in `infrastructure/scheduler/` for scheduled report delivery.
+
+---
+
 ## Objective
 
 Integrate Telegram and Bale messaging bots that:

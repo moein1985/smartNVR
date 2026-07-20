@@ -1,5 +1,16 @@
 # Phase 7: Web UI (Next.js) — Detailed Roadmap
 
+**Status:** ✅ Completed  
+**Date Completed:** July 2026
+
+## Architectural Pivots (Phase 7)
+- Settings page initially used `localStorage` with mock save (toast only). Refactored to use `settings-api.ts` calling real backend `/api/v1/settings` endpoints.
+- OpenAPI types auto-generated during Docker build via `openapi-typescript http://192.168.85.203:8088/openapi.json`.
+- Next.js 16 with Turbopack used (upgraded from initial 14.x plan).
+- Three pages implemented: Chat (`/`), Analytics (`/analytics`), Settings (`/settings`).
+
+---
+
 ## Objective
 
 Build a centralized Web UI using Next.js (App Router), TypeScript, TailwindCSS, and React Query. API clients and TypeScript types are auto-generated from the FastAPI backend's OpenAPI spec (running on port 8088). The first page to implement is a Chat UI for natural language queries.

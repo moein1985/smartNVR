@@ -1,5 +1,16 @@
 # Phase 4: Flutter Client (Mobile + Desktop) — Detailed Roadmap
 
+**Status:** ✅ Completed  
+**Date Completed:** July 2026
+
+## Architectural Pivots (Phase 4)
+- **MockApiClient** added for offline development — returns hardcoded test data with picsum.photos images when `isMockMode == true`.
+- **Row parsing fix:** Backend returns `rows` as `list[list[Any]]` (arrays), not `list[map]`. `eventRows` getter in `chat_provider.dart` zips `columns` with each row to produce maps. Handles both List-rows (real) and Map-rows (mock).
+- **Image URL fix:** Changed from hardcoded `http://192.168.85.203:5000/...` to dynamic `http://$serverIp:5000/...` using `serverConfigProvider`. `errorBuilder` shows `broken_image` icon instead of falling back to picsum.photos.
+- Server IP/port configurable via in-app Settings page, persisted with SharedPreferences.
+
+---
+
 ## Objective
 
 Build a cross-platform Flutter application (Android, iOS, Windows, macOS) that:

@@ -1,5 +1,15 @@
 # Phase 2: REST API (FastAPI) — Detailed Roadmap
 
+**Status:** ✅ Completed  
+**Date Completed:** July 2026
+
+## Architectural Pivots (Phase 2)
+- Backend port changed from 8000 (container) to 8088 (host) to avoid conflicts on production server.
+- API extended with `/api/v1/settings` GET/POST endpoints (Phase 8) for dynamic settings management.
+- OpenAPI spec at `/openapi.json` used by Next.js for auto-generating TypeScript types during Docker build.
+
+---
+
 ## Objective
 
 Expose the Phase 1 Text-to-SQL use case (and event query use cases) via a REST API using FastAPI, enabling Flutter app and external clients to interact with the platform.

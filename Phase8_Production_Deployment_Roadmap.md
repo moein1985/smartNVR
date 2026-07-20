@@ -1,9 +1,17 @@
 # Phase 8: Production Deployment on the Main Frigate Server (192.168.85.203)
 
-**Status:** Planning — Awaiting Green Light  
-**Date:** July 19, 2026  
+**Status:** ✅ Completed  
+**Date Completed:** July 20, 2026  
 **Target Server:** `192.168.85.203` (live Frigate NVR)  
-**Previous Server:** `192.168.85.202` (staging, to be decommissioned)
+**Previous Server:** `192.168.85.202` (staging, decommissioned)
+
+## Architectural Pivots (Phase 8)
+- **Settings Management:** Moved from `.env` to `settings.json` via backend API. Added `SettingsManager`, `SettingsModel`, `BotNotificationService`, and `CronService` (APScheduler). New dependencies: `httpx`, `apscheduler`.
+- **Frigate Safe Mode Fix:** Removed invalid `clean_copy: true` parameter from `snapshots` block in `/opt/frigate/config/config.yml` (not permitted in Frigate 0.18.x).
+- **Flutter Crash Fix:** Fixed type cast error — backend returns `rows` as `list[list]`, not `list[map]`. Updated `eventRows` getter to zip columns with rows.
+- **Flutter Image Fix:** Changed hardcoded image URL to dynamic `serverIp` from `serverConfigProvider`. Removed picsum.photos fallback in `errorBuilder`.
+
+---
 
 ---
 

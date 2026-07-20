@@ -1,5 +1,15 @@
 # Phase 6: Server Deployment (Docker) — Detailed Roadmap
 
+**Status:** ✅ Completed  
+**Date Completed:** July 2026
+
+## Architectural Pivots (Phase 6)
+- Initially deployed to staging server `192.168.85.202`, later migrated to production server `192.168.85.203` (Phase 8).
+- Backend container exposes port 8000, mapped to host port 8088 to avoid conflicts.
+- Frigate DB mounted read-only (`/opt/frigate/config:/opt/frigate/config:ro`).
+
+---
+
 ## Objective
 
 Deploy the Frigate Intelligence Platform as a Docker container on an Ubuntu server, ensuring the REST API is accessible, the Avalai LLM is connected, and the Frigate database is mounted for querying.
