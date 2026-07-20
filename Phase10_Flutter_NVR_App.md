@@ -520,6 +520,118 @@ void _playSegment(int index) {
 | 10.2 | Scaffold dual-tab architecture (BottomNavigationBar) | Dart code | [x] |
 | 10.3 | Full-screen image gallery (PageView + InteractiveViewer) | Dart code | [x] |
 | 10.4 | Inline video clip playback (media_kit) | Dart code | [x] |
-| 10.5 | Live View tab — WebRTC streaming (flutter_webrtc) | Dart code | [x] |
+| 10.5 | Live View tab — RTSP restream via go2rtc (media_kit) | Dart code | [x] |
 | 10.6 | VOD Playback tab — timeline + segment chaining (media_kit) | Dart code | [x] |
 | 10.7 | Polish, error handling, Persian localization | Dart code | [x] |
+
+---
+
+## Implementation Notes & Deviations
+
+### Live Streaming: WebRTC → RTSP Restream (Step 10.5 Revised)
+
+**Original plan:** Use `flutter_webrtc` for WebRTC SDP exchange with go2rtc via WebSocket.
+
+**What happened during implementation:**
+1. Initial HTTP POST to `/api/webrtc` returned **405 Method Not Allowed**.
+2. Switched to WebSocket at `ws://host:5000/api/ws?src=camera` — returned **403 Forbidden**.
+3. Discovered from Frigate frontend source code (`WebRTCPlayer.tsx`) that the correct WebSocket path is `ws://host:5000/live/webrtc/api/ws?src=camera`.
+4. Fixed the URL — WebSocket connected successfully, SDP answer received, `onTrack` fired.
+5. However, ICE connection failed (`Connecting → Failed`) because `go2rtc.webrtc.candidates` was not configured on the server.
+6. Frigate's `PUT /api/config/set` API rejected `webrtc.candidates` with "Extra inputs are not permitted".
+7. Configuring candidates required manual SSH access to edit the Frigate config file on the server.
+
+**Final solution:** Switched from WebRTC to **RTSP Restream** using `media_kit`:
+- go2rtc exposes an RTSP restream on port **8554** (`rtsp://host:8554/{camera_name}`)
+- Port 8554 was already accessible externally
+- `media_kit` (libmpv) was already in the project for VOD playback
+- No ICE candidates, STUN servers, or port 8555 configuration needed
+- Simpler, more reliable for LAN streaming
+
+**Files changed:**
+- `lib/presentation/providers/live_stream_provider.dart` — Replaced `WebRTCStreamController` with `LiveStreamController` using `media_kit` Player + VideoController
+- `lib/presentation/pages/live_view_tab.dart` — Replaced `RTCVideoView` with `Video` widget from `media_kit_video`
+
+### VOD Playback: URL Fix (Step 10.6 Revised)
+
+**Original plan:** Playback URL: `http://<serverIp>:5000${segment.path}` (filesystem path)
+
+**What happened:**
+1. Filesystem paths like `/media/frigate/recordings/2026-07-20/10/cam1/32.03.mp4` returned HTML (SPA fallback) from nginx.
+2. Adding `/recordings/` prefix still returned HTML — nginx didn't proxy this path.
+3. Discovered from Frigate API spec that the correct endpoint is:
+   ```
+   GET /api/{camera_name}/start/{start_ts}/end/{end_ts}/clip.mp4
+   ```
+4. Tested with curl — returns `Content-Type: video/mp4` with correct timestamps.
+
+**Final solution:** Playback URL: `http://<serverIp>:5000/api/{camera}/start/{start_ts}/end/{end_ts}/clip.mp4`
+
+**File changed:** `lib/presentation/pages/playback_tab.dart` — Updated `_playSegment` URL construction.
+
+### go2rtc Stream Configuration
+
+**Issue:** go2rtc streams were not configured on the running Frigate server, even though `frigate-config.yml` had them defined. The server was using a different config.
+
+**Fix:** Used Frigate's REST API to add the stream at runtime:
+```
+PUT /api/go2rtc/streams/cam1?src=rtsp://admin:admin123@192.168.85.112:554/Streaming/Channels/101
+```
+This API endpoint adds/updates a go2rtc stream without requiring a server restart.
+
+**Note:** The `go2rtc.webrtc.candidates` setting could NOT be set via the API. For future WebRTC support, the server's Frigate config file must be manually edited to include:
+```yaml
+go2rtc:
+  webrtc:
+    candidates:
+      - 192.168.85.203:8555
+      - stun:8555
+```
+
+### Android Build Configuration
+
+**Issues encountered:**
+- `flutter_webrtc` required `compileSdk >= 35` (AAR metadata). Fixed by setting `compileSdk = 36` in `android/app/build.gradle.kts`.
+- Other plugins also needed `compileSdk 36`. Added a force-override in `android/build.gradle.kts` for all subprojects.
+- `flutter_webrtc` upgraded from `^0.12.0` to `^1.0.0` for compatibility.
+
+**Files changed:**
+- `android/app/build.gradle.kts` — `compileSdk = 36`, `minSdk = 24`
+- `android/build.gradle.kts` — Force all subprojects to `compileSdk 36`
+- `android/app/src/main/AndroidManifest.xml` — Added INTERNET, ACCESS_NETWORK_STATE, MODIFY_AUDIO_SETTINGS, RECORD_AUDIO, WAKE_LOCK, FOREGROUND_SERVICE permissions
+
+### Frigate API Endpoints Discovered
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `GET /api/config` | GET | Fetch full Frigate configuration |
+| `PUT /api/config/set` | PUT | Update config (limited — rejects some fields) |
+| `GET /api/go2rtc/streams` | GET | List go2rtc streams |
+| `PUT /api/go2rtc/streams/{name}?src={url}` | PUT | Add/update go2rtc stream (no restart needed) |
+| `DELETE /api/go2rtc/streams/{name}` | DELETE | Remove go2rtc stream |
+| `GET /api/{camera}/start/{ts}/end/{ts}/clip.mp4` | GET | Recording clip (VOD playback) |
+| `GET /api/{camera}/start/{ts}/end/{ts}/preview.mp4` | GET | Preview clip |
+| `GET /api/recordings/summary?camera={cam}` | GET | Recording days summary |
+| `ws://host:5000/live/webrtc/api/ws?src={cam}` | WS | WebRTC SDP exchange (Frigate frontend pattern) |
+| `ws://host:5000/live/mse/api/ws?src={cam}` | WS | MSE streaming (alternative to WebRTC) |
+| `rtsp://host:8554/{cam}` | RTSP | go2rtc RTSP restream (used in final implementation) |
+
+### Key Learnings
+
+1. **Frigate's nginx reverse proxy** blocks direct access to go2rtc's native API (port 1984). All external access must go through Frigate's `/api/` prefix or the `/live/` WebSocket paths.
+2. **WebRTC requires `go2rtc.webrtc.candidates`** to be configured for ICE connectivity. Without it, SDP exchange succeeds but the ICE connection fails. This setting cannot be applied via the Frigate API — it requires manual config file editing and a Frigate restart.
+3. **RTSP restream (port 8554)** is the simplest and most reliable way to stream from go2rtc in a Flutter app. `media_kit`/libmpv handles RTSP natively with low latency.
+4. **Frigate recording clips** are served via timestamp-based URLs (`/api/{camera}/start/{ts}/end/{ts}/clip.mp4`), not filesystem paths. The timestamps are Unix epoch seconds.
+5. **The Frigate frontend source code** (`WebRTCPlayer.tsx`, `MsePlayer.tsx`) is the best reference for understanding the correct WebSocket protocols and message formats for go2rtc integration.
+
+### Future Improvements
+
+- [ ] Configure `go2rtc.webrtc.candidates` on the server to enable WebRTC (lower latency than RTSP)
+- [ ] Implement MSE streaming as a fallback (no ICE candidates needed, works via WebSocket)
+- [ ] Add audio support for live streams (currently video-only via RTSP)
+- [ ] Implement multi-camera live view with 4+ simultaneous streams
+- [ ] Add PTZ controls if cameras support it
+- [ ] Implement timeline scrubbing within recording clips (seek to specific time)
+- [ ] Add recording download/export feature
+- [ ] Remove `flutter_webrtc` dependency from `pubspec.yaml` if WebRTC is not pursued
+
