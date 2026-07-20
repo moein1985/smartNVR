@@ -4,8 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { HealthBadge } from "@/components/health/health-badge";
-
-const STORAGE_KEY = "frigate_settings";
+import { getSettings, updateSettings, type SettingsPayload } from "@/lib/settings-api";
 
 const LLM_MODELS = [
   "gemini-3.1-flash-lite",
@@ -53,6 +52,36 @@ const DEFAULT_SETTINGS: Settings = {
   reportFrequency: "disabled",
   reportTarget: "telegram",
 };
+
+function fromPayload(p: SettingsPayload): Settings {
+  return {
+    avalaiApiKey: p.avalai_api_key,
+    llmModel: p.llm_model,
+    telegramEnabled: p.telegram_enabled,
+    telegramBotToken: p.telegram_bot_token,
+    telegramChatId: p.telegram_chat_id,
+    baleEnabled: p.bale_enabled,
+    baleBotToken: p.bale_bot_token,
+    baleChatId: p.bale_chat_id,
+    reportFrequency: p.report_frequency,
+    reportTarget: p.report_target,
+  };
+}
+
+function toPayload(s: Settings): SettingsPayload {
+  return {
+    avalai_api_key: s.avalaiApiKey,
+    llm_model: s.llmModel,
+    telegram_enabled: s.telegramEnabled,
+    telegram_bot_token: s.telegramBotToken,
+    telegram_chat_id: s.telegramChatId,
+    bale_enabled: s.baleEnabled,
+    bale_bot_token: s.baleBotToken,
+    bale_chat_id: s.baleChatId,
+    report_frequency: s.reportFrequency,
+    report_target: s.reportTarget,
+  };
+}
 
 function Toggle({
   checked,
@@ -129,16 +158,22 @@ export default function SettingsPage() {
   const [toast, setToast] = useState<"idle" | "success" | "error">("idle");
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        setSettings({ ...DEFAULT_SETTINGS, ...parsed });
-      }
-    } catch {
-      // ignore parse errors
-    }
-    setLoaded(true);
+    let cancelled = false;
+    getSettings()
+      .then((data) => {
+        if (!cancelled) {
+          setSettings(fromPayload(data));
+          setLoaded(true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setLoaded(true);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const update = useCallback(
@@ -152,8 +187,7 @@ export default function SettingsPage() {
     setSaving(true);
     setToast("idle");
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+      await updateSettings(toPayload(settings));
       setToast("success");
     } catch {
       setToast("error");
@@ -166,8 +200,28 @@ export default function SettingsPage() {
   if (!loaded) {
     return (
       <div className="flex flex-col h-screen max-w-4xl mx-auto">
-        <div className="flex-1 flex items-center justify-center text-gray-500">
-          در حال بارگذاری...
+        <header className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-cyan-400">
+              Frigate Intelligence Panel
+            </h1>
+            <p className="text-sm text-gray-500">پنل تنظیمات سیستم</p>
+          </div>
+        </header>
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="bg-gray-800 rounded-xl p-6 space-y-4 animate-pulse">
+            <div className="h-10 w-48 bg-gray-700 rounded-lg" />
+            <div className="h-12 w-full bg-gray-700 rounded-lg" />
+            <div className="h-12 w-full bg-gray-700 rounded-lg" />
+          </div>
+          <div className="bg-gray-800 rounded-xl p-6 space-y-4 animate-pulse">
+            <div className="h-10 w-48 bg-gray-700 rounded-lg" />
+            <div className="h-12 w-full bg-gray-700 rounded-lg" />
+          </div>
+          <div className="bg-gray-800 rounded-xl p-6 space-y-4 animate-pulse">
+            <div className="h-10 w-48 bg-gray-700 rounded-lg" />
+            <div className="h-12 w-full bg-gray-700 rounded-lg" />
+          </div>
         </div>
       </div>
     );

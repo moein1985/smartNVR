@@ -22,8 +22,23 @@ class ChatMessage {
     final result = queryResult;
     if (result == null) return [];
     final rows = result['rows'];
-    if (rows is! List) return [];
-    return rows.cast<Map<String, dynamic>>();
+    if (rows is! List || rows.isEmpty) return [];
+    final columns = result['columns'];
+    if (columns is! List || columns.isEmpty) return [];
+
+    return rows.map((row) {
+      if (row is Map<String, dynamic>) {
+        return row;
+      }
+      if (row is List) {
+        final map = <String, dynamic>{};
+        for (var i = 0; i < row.length && i < columns.length; i++) {
+          map[columns[i].toString()] = row[i];
+        }
+        return map;
+      }
+      return <String, dynamic>{};
+    }).toList();
   }
 }
 
