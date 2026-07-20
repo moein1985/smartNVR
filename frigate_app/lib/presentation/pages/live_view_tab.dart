@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import '../providers/live_stream_provider.dart';
 import '../providers/server_config_provider.dart';
 
@@ -12,8 +12,8 @@ class LiveViewTab extends ConsumerStatefulWidget {
 }
 
 class _LiveViewTabState extends ConsumerState<LiveViewTab> {
-  final Map<String, WebRTCStreamController> _controllers = {};
-  final Map<String, RTCVideoRenderer> _renderers = {};
+  final Map<String, LiveStreamController> _controllers = {};
+  final Map<String, VideoController> _videoControllers = {};
   final Map<String, StreamStatus> _statuses = {};
   final Map<String, String> _errors = {};
 
@@ -28,7 +28,7 @@ class _LiveViewTabState extends ConsumerState<LiveViewTab> {
   Future<void> _connectStream(String cameraName, String serverIp) async {
     if (_controllers.containsKey(cameraName)) return;
 
-    final controller = WebRTCStreamController(
+    final controller = LiveStreamController(
       serverIp: serverIp,
       cameraName: cameraName,
     );
@@ -37,10 +37,10 @@ class _LiveViewTabState extends ConsumerState<LiveViewTab> {
     setState(() => _statuses[cameraName] = StreamStatus.connecting);
 
     try {
-      final renderer = await controller.startStream();
+      final vc = await controller.startStream();
       if (mounted) {
         setState(() {
-          _renderers[cameraName] = renderer;
+          _videoControllers[cameraName] = vc;
           _statuses[cameraName] = StreamStatus.connected;
         });
       }
@@ -57,7 +57,7 @@ class _LiveViewTabState extends ConsumerState<LiveViewTab> {
   void _disconnectStream(String cameraName) {
     _controllers[cameraName]?.dispose();
     _controllers.remove(cameraName);
-    _renderers.remove(cameraName);
+    _videoControllers.remove(cameraName);
     setState(() {
       _statuses.remove(cameraName);
       _errors.remove(cameraName);
@@ -110,7 +110,7 @@ class _LiveViewTabState extends ConsumerState<LiveViewTab> {
               cameraName: cam.name,
               status: _statuses[cam.name] ?? StreamStatus.idle,
               errorMessage: _errors[cam.name] ?? '',
-              renderer: _renderers[cam.name],
+              videoController: _videoControllers[cam.name],
               onTap: () {
                 final status = _statuses[cam.name];
                 if (status == StreamStatus.connected ||
@@ -120,7 +120,7 @@ class _LiveViewTabState extends ConsumerState<LiveViewTab> {
                   _connectStream(cam.name, serverIp);
                 }
               },
-              onFullscreen: _renderers[cam.name] != null
+              onFullscreen: _videoControllers[cam.name] != null
                   ? () => _openFullscreen(context, cam.name)
                   : null,
             );
@@ -131,8 +131,8 @@ class _LiveViewTabState extends ConsumerState<LiveViewTab> {
   }
 
   void _openFullscreen(BuildContext context, String cameraName) {
-    final renderer = _renderers[cameraName];
-    if (renderer == null) return;
+    final vc = _videoControllers[cameraName];
+    if (vc == null) return;
 
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -144,7 +144,7 @@ class _LiveViewTabState extends ConsumerState<LiveViewTab> {
             title: Text(cameraName),
           ),
           body: Center(
-            child: RTCVideoView(renderer, objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitContain),
+            child: Video(controller: vc),
           ),
         ),
       ),
@@ -156,7 +156,7 @@ class _CameraCell extends StatelessWidget {
   final String cameraName;
   final StreamStatus status;
   final String errorMessage;
-  final RTCVideoRenderer? renderer;
+  final VideoController? videoController;
   final VoidCallback onTap;
   final VoidCallback? onFullscreen;
 
@@ -164,7 +164,7 @@ class _CameraCell extends StatelessWidget {
     required this.cameraName,
     required this.status,
     required this.errorMessage,
-    required this.renderer,
+    required this.videoController,
     required this.onTap,
     this.onFullscreen,
   });
@@ -179,8 +179,8 @@ class _CameraCell extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          if (renderer != null && status == StreamStatus.connected)
-            RTCVideoView(renderer!, objectFit: RTCVideoViewObjectFit.RTCVideoViewObjectFitCover)
+          if (videoController != null && status == StreamStatus.connected)
+            Video(controller: videoController!)
           else
             Container(color: colorScheme.surfaceContainerHighest),
 

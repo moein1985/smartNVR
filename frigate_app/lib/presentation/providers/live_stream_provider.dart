@@ -1,8 +1,6 @@
-import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import 'server_config_provider.dart';
 
 class CameraInfo {
@@ -41,167 +39,51 @@ final cameraListProvider = FutureProvider<List<CameraInfo>>((ref) async {
 
 enum StreamStatus { idle, connecting, connected, error }
 
-class WebRTCStreamController {
+class LiveStreamController {
   final String serverIp;
   final String cameraName;
-  RTCPeerConnection? _pc;
-  RTCVideoRenderer? _renderer;
+  Player? _player;
+  VideoController? _videoController;
   StreamStatus _status = StreamStatus.idle;
   String _errorMessage = '';
 
   StreamStatus get status => _status;
   String get errorMessage => _errorMessage;
-  RTCVideoRenderer? get renderer => _renderer;
+  VideoController? get videoController => _videoController;
 
-  WebRTCStreamController({
+  LiveStreamController({
     required this.serverIp,
     required this.cameraName,
   });
 
-  WebSocket? _ws;
-
-  Future<RTCVideoRenderer> startStream() async {
+  Future<VideoController> startStream() async {
     _status = StreamStatus.connecting;
     _errorMessage = '';
 
     try {
-      _renderer = RTCVideoRenderer();
-      await _renderer!.initialize();
+      final rtspUrl = 'rtsp://$serverIp:8554/$cameraName';
+      print('[Live] Starting RTSP stream: $rtspUrl');
 
-      _pc = await createPeerConnection({
-        'iceServers': [
-          {'urls': 'stun:stun.l.google.com:19302'}
-        ],
-        'bundlePolicy': 'max-bundle',
-      });
+      _player = Player();
+      _videoController = VideoController(_player!);
 
-      _pc!.onTrack = (event) {
-        print('[WebRTC] onTrack: kind=${event.track.kind}, streams=${event.streams.length}');
-        if (event.track.kind == 'video') {
-          _renderer!.srcObject = event.streams[0];
-        }
-      };
+      await _player!.open(Media(rtspUrl));
+      print('[Live] Player opened successfully');
 
-      _pc!.onConnectionState = (state) {
-        print('[WebRTC] onConnectionState: $state');
-        if (state == RTCPeerConnectionState.RTCPeerConnectionStateConnected) {
-          _status = StreamStatus.connected;
-        } else if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed) {
-          _status = StreamStatus.error;
-          _errorMessage = 'Connection failed';
-        }
-      };
-
-      await _pc!.addTransceiver(
-        kind: RTCRtpMediaType.RTCRtpMediaTypeVideo,
-        init: RTCRtpTransceiverInit(direction: TransceiverDirection.RecvOnly),
-      );
-      await _pc!.addTransceiver(
-        kind: RTCRtpMediaType.RTCRtpMediaTypeAudio,
-        init: RTCRtpTransceiverInit(direction: TransceiverDirection.RecvOnly),
-      );
-
-      final wsUrl = 'ws://$serverIp:5000/live/webrtc/api/ws?src=$cameraName';
-      print('[WebRTC] Connecting to WebSocket: $wsUrl');
-      _ws = await WebSocket.connect(wsUrl).timeout(
-        const Duration(seconds: 5),
-        onTimeout: () => throw TimeoutException('WebSocket connection timeout'),
-      );
-      print('[WebRTC] WebSocket connected');
-
-      final answerCompleter = Completer<String>();
-
-      _ws!.listen(
-        (data) {
-          if (data is String) {
-            final msg = jsonDecode(data) as Map<String, dynamic>;
-            final type = msg['type'] as String?;
-            print('[WebRTC] WS message: type=$type');
-
-            if (type == 'webrtc/answer') {
-              final answerSdp = msg['value'] as String;
-              if (!answerCompleter.isCompleted) {
-                answerCompleter.complete(answerSdp);
-              }
-            } else if (type == 'webrtc/candidate') {
-              final candidate = msg['value'] as String?;
-              if (candidate != null && candidate.isNotEmpty) {
-                _pc!.addCandidate(
-                  RTCIceCandidate(candidate, '0', 0),
-                );
-              }
-            } else if (type == 'error') {
-              final error = msg['value'] as String?;
-              print('[WebRTC] go2rtc error value: $error');
-              print('[WebRTC] Full WS message: $msg');
-              if (!answerCompleter.isCompleted) {
-                answerCompleter.completeError(Exception('go2rtc error: $error'));
-              }
-            }
-          }
-        },
-        onError: (e) {
-          print('[WebRTC] WebSocket error: $e');
-          if (!answerCompleter.isCompleted) {
-            answerCompleter.completeError(e);
-          }
-        },
-        onDone: () {
-          print('[WebRTC] WebSocket closed');
-          if (!answerCompleter.isCompleted) {
-            answerCompleter.completeError(Exception('WebSocket closed before receiving answer'));
-          }
-        },
-      );
-
-      _pc!.onIceCandidate = (candidate) {
-        final msg = jsonEncode({
-          'type': 'webrtc/candidate',
-          'value': candidate.candidate ?? '',
-        });
-        _ws?.add(msg);
-      };
-
-      final offer = await _pc!.createOffer();
-      await _pc!.setLocalDescription(offer);
-
-      final offerMsg = jsonEncode({
-        'type': 'webrtc/offer',
-        'value': offer.sdp ?? '',
-      });
-      _ws!.add(offerMsg);
-      print('[WebRTC] Sent webrtc/offer, SDP length: ${offer.sdp?.length ?? 0}');
-
-      final answerSdp = await answerCompleter.future.timeout(
-        const Duration(seconds: 10),
-        onTimeout: () {
-          throw TimeoutException('Timeout waiting for WebRTC answer from go2rtc');
-        },
-      );
-
-      print('[WebRTC] Received answer SDP, length: ${answerSdp.length}');
-
-      await _pc!.setRemoteDescription(
-        RTCSessionDescription(answerSdp, 'answer'),
-      );
-
-      print('[WebRTC] Remote description set successfully');
-
-      return _renderer!;
+      _status = StreamStatus.connected;
+      return _videoController!;
     } catch (e) {
       _status = StreamStatus.error;
       _errorMessage = e.toString();
+      print('[Live] Error: $e');
       rethrow;
     }
   }
 
   void stopStream() {
-    _ws?.close();
-    _ws = null;
-    _pc?.close();
-    _renderer?.dispose();
-    _pc = null;
-    _renderer = null;
+    _player?.dispose();
+    _player = null;
+    _videoController = null;
     _status = StreamStatus.idle;
   }
 
