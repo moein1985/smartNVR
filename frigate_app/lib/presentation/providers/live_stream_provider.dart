@@ -1,4 +1,6 @@
-import 'package:dio/dio.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'server_config_provider.dart';
@@ -56,6 +58,8 @@ class WebRTCStreamController {
     required this.cameraName,
   });
 
+  WebSocket? _ws;
+
   Future<RTCVideoRenderer> startStream() async {
     _status = StreamStatus.connecting;
     _errorMessage = '';
@@ -65,17 +69,21 @@ class WebRTCStreamController {
       await _renderer!.initialize();
 
       _pc = await createPeerConnection({
-        'iceServers': [],
+        'iceServers': [
+          {'urls': 'stun:stun.l.google.com:19302'}
+        ],
         'bundlePolicy': 'max-bundle',
       });
 
       _pc!.onTrack = (event) {
+        print('[WebRTC] onTrack: kind=${event.track.kind}, streams=${event.streams.length}');
         if (event.track.kind == 'video') {
           _renderer!.srcObject = event.streams[0];
         }
       };
 
       _pc!.onConnectionState = (state) {
+        print('[WebRTC] onConnectionState: $state');
         if (state == RTCPeerConnectionState.RTCPeerConnectionStateConnected) {
           _status = StreamStatus.connected;
         } else if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed) {
@@ -93,14 +101,91 @@ class WebRTCStreamController {
         init: RTCRtpTransceiverInit(direction: TransceiverDirection.RecvOnly),
       );
 
+      final wsUrl = 'ws://$serverIp:5000/live/webrtc/api/ws?src=$cameraName';
+      print('[WebRTC] Connecting to WebSocket: $wsUrl');
+      _ws = await WebSocket.connect(wsUrl).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => throw TimeoutException('WebSocket connection timeout'),
+      );
+      print('[WebRTC] WebSocket connected');
+
+      final answerCompleter = Completer<String>();
+
+      _ws!.listen(
+        (data) {
+          if (data is String) {
+            final msg = jsonDecode(data) as Map<String, dynamic>;
+            final type = msg['type'] as String?;
+            print('[WebRTC] WS message: type=$type');
+
+            if (type == 'webrtc/answer') {
+              final answerSdp = msg['value'] as String;
+              if (!answerCompleter.isCompleted) {
+                answerCompleter.complete(answerSdp);
+              }
+            } else if (type == 'webrtc/candidate') {
+              final candidate = msg['value'] as String?;
+              if (candidate != null && candidate.isNotEmpty) {
+                _pc!.addCandidate(
+                  RTCIceCandidate(candidate, '0', 0),
+                );
+              }
+            } else if (type == 'error') {
+              final error = msg['value'] as String?;
+              print('[WebRTC] go2rtc error value: $error');
+              print('[WebRTC] Full WS message: $msg');
+              if (!answerCompleter.isCompleted) {
+                answerCompleter.completeError(Exception('go2rtc error: $error'));
+              }
+            }
+          }
+        },
+        onError: (e) {
+          print('[WebRTC] WebSocket error: $e');
+          if (!answerCompleter.isCompleted) {
+            answerCompleter.completeError(e);
+          }
+        },
+        onDone: () {
+          print('[WebRTC] WebSocket closed');
+          if (!answerCompleter.isCompleted) {
+            answerCompleter.completeError(Exception('WebSocket closed before receiving answer'));
+          }
+        },
+      );
+
+      _pc!.onIceCandidate = (candidate) {
+        final msg = jsonEncode({
+          'type': 'webrtc/candidate',
+          'value': candidate.candidate ?? '',
+        });
+        _ws?.add(msg);
+      };
+
       final offer = await _pc!.createOffer();
       await _pc!.setLocalDescription(offer);
 
-      final answerSdp = await _exchangeSdp(offer.sdp ?? '');
+      final offerMsg = jsonEncode({
+        'type': 'webrtc/offer',
+        'value': offer.sdp ?? '',
+      });
+      _ws!.add(offerMsg);
+      print('[WebRTC] Sent webrtc/offer, SDP length: ${offer.sdp?.length ?? 0}');
+
+      final answerSdp = await answerCompleter.future.timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          throw TimeoutException('Timeout waiting for WebRTC answer from go2rtc');
+        },
+      );
+
+      print('[WebRTC] Received answer SDP, length: ${answerSdp.length}');
 
       await _pc!.setRemoteDescription(
         RTCSessionDescription(answerSdp, 'answer'),
       );
+
+      print('[WebRTC] Remote description set successfully');
 
       return _renderer!;
     } catch (e) {
@@ -110,24 +195,9 @@ class WebRTCStreamController {
     }
   }
 
-  Future<String> _exchangeSdp(String offerSdp) async {
-    final dio = Dio(BaseOptions(
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
-    ));
-    final response = await dio.post(
-      'http://$serverIp:5000/api/webrtc?camera=$cameraName',
-      data: {'sdp': offerSdp, 'type': 'offer'},
-      options: Options(
-        headers: {'Content-Type': 'application/json'},
-        responseType: ResponseType.json,
-      ),
-    );
-    final data = response.data as Map<String, dynamic>;
-    return data['sdp'] as String;
-  }
-
   void stopStream() {
+    _ws?.close();
+    _ws = null;
     _pc?.close();
     _renderer?.dispose();
     _pc = null;
