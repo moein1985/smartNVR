@@ -69,6 +69,16 @@ export default function AnalyticsPage() {
             >
               تحلیل‌ها
             </Link>
+            <Link
+              href="/settings"
+              className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                pathname === "/settings"
+                  ? "bg-cyan-600 text-white"
+                  : "text-gray-400 hover:text-gray-200"
+              }`}
+            >
+              تنظیمات
+            </Link>
           </nav>
         </div>
         <HealthBadge />
