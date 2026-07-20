@@ -14,7 +14,6 @@ class TelegramBotController:
         self._presenter = BotPresenter()
 
     def create_app(self):
-        from telegram import Update
         from telegram.ext import (
             Application,
             CommandHandler,

@@ -63,8 +63,8 @@ class _PlaybackTabState extends ConsumerState<PlaybackTab> {
     );
     final url = 'http://$serverIp:5000/api/${segment.camera}/start/${segment.startTime}/end/${segment.endTime}/clip.mp4';
 
-    print('[Playback] Opening URL: $url');
-    print('[Playback] Segment: camera=${segment.camera}, start=${segment.startTime}, end=${segment.endTime}, path=${segment.path}');
+    debugPrint('[Playback] Opening URL: $url');
+    debugPrint('[Playback] Segment: camera=${segment.camera}, start=${segment.startTime}, end=${segment.endTime}, path=${segment.path}');
     _player?.open(Media(url));
   }
 

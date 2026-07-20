@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -62,20 +63,20 @@ class LiveStreamController {
 
     try {
       final rtspUrl = 'rtsp://$serverIp:8554/$cameraName';
-      print('[Live] Starting RTSP stream: $rtspUrl');
+      debugPrint('[Live] Starting RTSP stream: $rtspUrl');
 
       _player = Player();
       _videoController = VideoController(_player!);
 
       await _player!.open(Media(rtspUrl));
-      print('[Live] Player opened successfully');
+      debugPrint('[Live] Player opened successfully');
 
       _status = StreamStatus.connected;
       return _videoController!;
     } catch (e) {
       _status = StreamStatus.error;
       _errorMessage = e.toString();
-      print('[Live] Error: $e');
+      debugPrint('[Live] Error: $e');
       rethrow;
     }
   }

@@ -1,7 +1,6 @@
 import logging
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.cron import CronTrigger
 
 from frigate_intelligence.domain.models.settings_model import SettingsModel
 from frigate_intelligence.infrastructure.config.settings_manager import (

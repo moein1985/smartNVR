@@ -6,9 +6,6 @@ from frigate_intelligence.use_cases.text_to_sql.text_to_sql_use_case import (
     TextToSQLResponse,
 )
 from frigate_intelligence.domain.entities.query_result import QueryResult
-from frigate_intelligence.interface_adapters.controllers.api_controller import (
-    APIController,
-)
 from frigate_intelligence.infrastructure.api.fastapi_app import create_app
 from frigate_intelligence.config.dependencies import Container
 
