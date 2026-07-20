@@ -16,6 +16,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   late TextEditingController _portController;
   ConnectionStatus _status = ConnectionStatus.idle;
   bool _disposed = false;
+  bool _isMockMode = false;
 
   @override
   void initState() {
@@ -27,6 +28,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       if (!_disposed) {
         _ipController.text = config.ip;
         _portController.text = config.port.toString();
+        _isMockMode = config.isMockMode;
       }
     });
   }
@@ -36,9 +38,24 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final port = int.tryParse(_portController.text.trim()) ?? 0;
     if (ip.isEmpty || port == 0) return;
 
+    final config = ServerConfig(ip: ip, port: port, isMockMode: _isMockMode);
+
+    if (_isMockMode) {
+      await ref.read(serverConfigProvider.notifier).updateAndSave(config);
+      if (!_disposed && mounted) {
+        setState(() => _status = ConnectionStatus.connected);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('حالت آفلاین فعال شد - داده‌های تستی'),
+            backgroundColor: Colors.blue,
+          ),
+        );
+      }
+      return;
+    }
+
     setState(() => _status = ConnectionStatus.connecting);
 
-    final config = ServerConfig(ip: ip, port: port);
     final apiClient = ApiClient(config);
 
     try {
@@ -114,6 +131,19 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 28),
+              SwitchListTile(
+                title: const Text('حالت آفلاین'),
+                subtitle: const Text('استفاده از داده‌های تستی بدون اتصال به سرور'),
+                secondary: const Icon(Icons.cloud_off),
+                value: _isMockMode,
+                onChanged: (value) {
+                  setState(() {
+                    _isMockMode = value;
+                    _status = ConnectionStatus.idle;
+                  });
+                },
+              ),
+              const Divider(height: 32),
               SizedBox(
                 width: double.infinity,
                 height: 48,

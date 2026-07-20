@@ -2,7 +2,16 @@
 import 'package:dio/dio.dart';
 import '../../core/config/app_config.dart';
 
-class ApiClient {
+abstract class BaseApiClient {
+  Future<Map<String, dynamic>> query(String question, {int maxRetries});
+  Future<List<Map<String, dynamic>>> getEvents({
+    String? camera,
+    String? label,
+  });
+  Future<Map<String, dynamic>> health();
+}
+
+class ApiClient implements BaseApiClient {
   Dio _dio;
 
   ApiClient(ServerConfig config) : _dio = _createDio(config);
@@ -22,6 +31,7 @@ class ApiClient {
 
   Dio get dio => _dio;
 
+  @override
   Future<Map<String, dynamic>> query(String question,
       {int maxRetries = 3}) async {
     final response = await _dio.post('/api/v1/query', data: {
@@ -31,6 +41,7 @@ class ApiClient {
     return response.data as Map<String, dynamic>;
   }
 
+  @override
   Future<List<Map<String, dynamic>>> getEvents({
     String? camera,
     String? label,
@@ -45,6 +56,7 @@ class ApiClient {
     return events.cast<Map<String, dynamic>>();
   }
 
+  @override
   Future<Map<String, dynamic>> health() async {
     final response = await _dio.get('/api/v1/health');
     return response.data as Map<String, dynamic>;

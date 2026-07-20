@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/config/app_config.dart';
 import '../../core/config/server_config_service.dart';
 import '../../data/datasources/api_client.dart';
+import '../../data/datasources/mock_api_client.dart';
 
 final serverConfigServiceProvider = Provider<ServerConfigService>((ref) {
   return ServerConfigService();
@@ -26,10 +27,15 @@ class ServerConfigNotifier extends AsyncNotifier<ServerConfig> {
   }
 }
 
-final apiClientProvider = Provider<ApiClient>((ref) {
+final apiClientProvider = Provider<BaseApiClient>((ref) {
   final configAsync = ref.watch(serverConfigProvider);
   return configAsync.maybeWhen(
-    data: (config) => ApiClient(config),
+    data: (config) {
+      if (config.isMockMode) {
+        return MockApiClient();
+      }
+      return ApiClient(config);
+    },
     orElse: () => ApiClient(const ServerConfig(ip: '0.0.0.0', port: 0)),
   );
 });
