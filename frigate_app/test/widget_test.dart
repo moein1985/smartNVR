@@ -12,15 +12,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frigate_intelligence/main.dart';
 
 void main() {
-  testWidgets('Settings page renders IP and Port fields', (WidgetTester tester) async {
+  testWidgets('Chat page renders with greeting and input bar', (WidgetTester tester) async {
     await tester.pumpWidget(
       const ProviderScope(child: FrigateIntelligenceApp()),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('تنظیمات سرور'), findsOneWidget);
-    expect(find.text('ذخیره و اتصال'), findsOneWidget);
-    expect(find.byIcon(Icons.dns), findsWidgets);
-    expect(find.byIcon(Icons.router), findsWidgets);
+    expect(find.text('Frigate Intelligence'), findsOneWidget);
+    expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.mic_none), findsOneWidget);
+    expect(find.byIcon(Icons.send_rounded), findsOneWidget);
   });
 }
