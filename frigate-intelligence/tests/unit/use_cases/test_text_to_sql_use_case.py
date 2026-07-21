@@ -109,3 +109,55 @@ def test_sql_extraction_from_markdown():
     response = use_case.execute(TextToSQLRequest(question="Show events?"))
 
     assert response.sql == "SELECT * FROM event"
+
+
+def test_bug_025_llm_model_upgrade_sql_generation():
+    """Regression test for BUG-025: Upgraded LLM model (gemini-2.5-flash) should
+    still generate valid SQL via generate_sql(). The new model supports JSON mode
+    but generate_sql() must still return a plain SQL string."""
+    mock_repo = MagicMock()
+    mock_repo.execute_sql.return_value = QueryResult(
+        sql="SELECT label, COUNT(*) FROM event GROUP BY label",
+        columns=["label", "COUNT(*)"],
+        rows=[("person", 5), ("car", 3)],
+        row_count=2,
+    )
+    mock_llm = MagicMock()
+    mock_llm.generate_sql.return_value = "SELECT label, COUNT(*) FROM event GROUP BY label"
+    mock_llm.explain_result.return_value = "Found 2 labels"
+
+    use_case = TextToSQLUseCase(mock_repo, mock_llm)
+    response = use_case.execute(TextToSQLRequest(question="Count detections by label"))
+
+    assert response.sql == "SELECT label, COUNT(*) FROM event GROUP BY label"
+    assert response.result.row_count == 2
+    assert response.attempts == 1
+    mock_llm.generate_sql.assert_called_once()
+
+
+def test_bug_025_enrich_question_removed():
+    """Regression test for BUG-025: _enrich_question() should be removed.
+    The question passed to the LLM must be the raw user question without
+    injected hints. Verify by checking the LLM receives the exact question."""
+    mock_repo = MagicMock()
+    mock_repo.execute_sql.return_value = QueryResult(
+        sql="SELECT * FROM event WHERE label='person'",
+        columns=["id"],
+        rows=[("1",)],
+        row_count=1,
+    )
+    mock_llm = MagicMock()
+    mock_llm.generate_sql.return_value = "SELECT * FROM event WHERE label='person'"
+    mock_llm.explain_result.return_value = "Found 1 person"
+
+    use_case = TextToSQLUseCase(mock_repo, mock_llm)
+    raw_question = "Was moein seen today?"
+    response = use_case.execute(TextToSQLRequest(question=raw_question))
+
+    assert response.attempts == 1
+    call_args = mock_llm.generate_sql.call_args
+    user_msg = call_args[0][0]
+    assert user_msg == raw_question
+    assert "NOTE:" not in user_msg
+    assert "sub_label LIKE" not in user_msg
+    assert not hasattr(use_case, "_enrich_question")

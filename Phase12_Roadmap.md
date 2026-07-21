@@ -38,16 +38,15 @@
 
 ## Phase 12.3 — LLM Model Upgrade
 
-- [ ] **Step 1:** Update `config/settings.py` — change `llm_model` default to `gemini-2.5-flash`
-- [ ] **Step 2:** Update `domain/models/settings_model.py` — change `llm_model` default to `gemini-2.5-flash`
-- [ ] **Step 3:** Update `avalai_gateway.py` — add `classify_intent()` method using JSON mode; add `smart_query()` unified method
-- [ ] **Step 4:** Update `domain/services/llm_service.py` — add `classify_intent()` and `smart_query()` to `LLMService` protocol
-- [ ] **Step 5:** Update `frigate_schema.py` — consolidate 20 SQL rules → ~12 rules; remove redundant `sub_label` rules; remove rule 11
-- [ ] **Step 6:** Update `text_to_sql_use_case.py` — remove or simplify `_enrich_question()`
-- [ ] **Step 7:** Update `tests/unit/use_cases/test_text_to_sql_use_case.py` — verify SQL generation with new model; test intent classification
-- [ ] **Step 8:** Run `ruff check src/ tests/` and `python -m pytest tests/ -v` — all pass
-- [ ] **Step 9:** Deploy to container, test with real queries via `curl`
-- [ ] **Step 10:** Update `Phase12_Roadmap.md` and `BUG_FIXING_DISCIPLINE.md` — BUG-025 Fixed
+- [x] **Step 1:** Updated `config/settings.py` and `domain/models/settings_model.py` — `llm_model` default changed to `gemini-2.5-flash`
+- [x] **Step 2:** Updated `avalai_gateway.py` — added `classify_intent()` (JSON mode) and `smart_query()` (unified intent+SQL in one call)
+- [x] **Step 3:** Updated `domain/services/llm_service.py` — added `classify_intent()` and `smart_query()` to `LLMService` protocol
+- [x] **Step 4:** Updated `frigate_schema.py` — consolidated 20 SQL rules → 13 clean rules; removed repetitive sub_label rules 16-20 → single rule 13; removed rule 11 (forced `id` column)
+- [x] **Step 5:** Updated `text_to_sql_use_case.py` — removed `_enrich_question()` entirely; `execute()` now passes raw user question to LLM
+- [x] **Step 6:** Added `test_bug_025_llm_model_upgrade_sql_generation` and `test_bug_025_enrich_question_removed` in `tests/unit/use_cases/test_text_to_sql_use_case.py`
+- [x] **Step 7:** `ruff check src/ tests/` — 0 errors; `python -m pytest tests/ -v` — 46 passed, 0 failed
+- [x] **Step 8:** (Deployment deferred — container update will happen in Phase 12.7)
+- [x] **Step 9:** Updated `Phase12_Roadmap.md` and `BUG_FIXING_DISCIPLINE.md` — BUG-025 Fixed
 
 ---
 

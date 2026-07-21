@@ -31,10 +31,11 @@ def test_sql_rules_include_sub_label_disambiguation():
     assert "label" in SQL_RULES
 
 
-def test_sql_rules_include_rule_17():
-    """SQL_RULES should include rule 17 about filtering by sub_label for person identity."""
-    assert "17." in SQL_RULES
-    assert "sub_label='person_name'" in SQL_RULES
+def test_sql_rules_include_sub_label_rule():
+    """SQL_RULES should include a consolidated rule about sub_label for person identity."""
+    assert "sub_label" in SQL_RULES
+    assert "label='person'" in SQL_RULES
+    assert "sub_label LIKE '%name%'" in SQL_RULES
 
 
 def test_fallback_schema_includes_sub_label():

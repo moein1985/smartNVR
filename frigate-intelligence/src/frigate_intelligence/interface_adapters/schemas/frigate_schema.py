@@ -129,25 +129,16 @@ WHERE label='person' AND sub_label='unknown'
 ORDER BY start_time DESC LIMIT 50;"""
 
 
-SQL_RULES = """CRITICAL BEFORE GENERATING SQL: If the user mentions a person NAME (e.g., "moein", "Moein", "soleymani", "ahmad"), you MUST use `sub_label` column to filter, NEVER the `label` column. The `label` column only contains object classes like 'person', 'car'. Person names are stored in `sub_label`. Example: "Was moein seen?" -> WHERE label='person' AND sub_label LIKE '%moein%'. WRONG: WHERE label='moein'.
-
-1. Generate ONLY SELECT queries. No INSERT, UPDATE, DELETE, DROP, ALTER, or ATTACH.
+SQL_RULES = """1. Generate ONLY SELECT queries. No INSERT, UPDATE, DELETE, DROP, ALTER, or ATTACH.
 2. Use SQLite syntax (json_extract for JSON fields).
-3. CRITICAL: Database time columns (start_time, end_time, timestamp) are stored as Unix timestamps (float). Whenever you SELECT these columns for the final answer, you MUST format them using datetime(column_name, 'unixepoch', 'localtime'). Never return raw unix timestamps to the user.
-4. CRITICAL: The standalone `score` and `top_score` columns are often NULL in Frigate 0.18+. To analyze or retrieve detection confidence scores, you MUST use SQLite's JSON functions to extract from the `data` column: json_extract(data, '$.score'). Do NOT use the `score` column directly.
-5. Limit results to 100 rows maximum (add LIMIT 100).
-6. Table names: event, recordings, timeline, reviewsegment, previews, regions, user.
-7. Do not use markdown code fences in output. Return raw SQL only.
-8. If a query returns NULL or 0 rows, do NOT conclude that no data exists. The column itself may be unused. Consider alternative columns or JSON extraction.
-9. For 'today' filters use: start_time >= strftime('%s', 'now', 'start of day').
-10. For 'last hour' filters use: start_time >= strftime('%s', 'now') - 3600.
-11. CRITICAL: If the user asks about specific events, recent detections, or asks to 'see' or 'show' something, you MUST include the event `id` column in your SELECT statement. The frontend uses this `id` to render snapshot images. Example: SELECT id, camera, datetime(start_time, 'unixepoch', 'localtime') as time FROM event WHERE label='person' ORDER BY start_time DESC LIMIT 10;
-12. The `zones` column is a JSON array (e.g., ["parking_1"]). Use `LIKE '%zone_name%'` for simple filtering or `EXISTS (SELECT 1 FROM json_each(zones) WHERE value='zone_name')` for precise matching.
-13. Available detection labels: person, car, motorcycle, bicycle, dog, cat.
-14. Available zones: parking_1, main_gate (defined in Frigate config). If the user mentions a zone by description (e.g., "parking area"), map it to the closest zone name.
-15. The `recordings` table has `path`, `start_time`, `end_time`, `duration` for 10-second MP4 segments stored at /media/frigate/recordings/YYYY-MM-DD/HH/<camera>/MM.SS.mp4.
-16. CRITICAL: The `sub_label` column contains the recognized person's name when facial recognition is active. Values can be a single name (e.g., 'moein'), comma-separated names for multiple faces (e.g., 'moein, ahmad'), 'unknown' for unrecognized faces, or NULL if no facial recognition was performed.
-17. When the user asks about a specific person by name (e.g., "Was moein seen?"), you MUST filter on `sub_label LIKE '%person_name%'` in addition to `label='person'`. Do NOT search by the `label` column alone — `label` only contains the object class ('person'), not the identity. CORRECT: WHERE label='person' AND sub_label LIKE '%moein%'. WRONG: WHERE label='moein'.
-18. When the user asks "who was seen" or "who came today", query `SELECT DISTINCT sub_label FROM event WHERE label='person' AND sub_label IS NOT NULL`.
-19. When the user asks about "unknown" or "unrecognized" people, filter on `sub_label='unknown'`.
-20. The `sub_label` may contain comma-separated values for multiple faces. Use `LIKE '%person_name%'` for flexible matching, or exact match `sub_label='person_name'` for single-face events."""
+3. Time columns (start_time, end_time, timestamp) are Unix timestamps (float). When SELECTing for display, format with datetime(column, 'unixepoch', 'localtime'). Never return raw timestamps.
+4. The `score` and `top_score` columns are often NULL. To get detection confidence, use json_extract(data, '$.score') instead.
+5. Limit results to 100 rows (LIMIT 100).
+6. Tables: event, recordings, timeline, reviewsegment, previews, regions, user.
+7. Return raw SQL only — no markdown code fences.
+8. If a column returns NULL or 0 rows, consider alternative columns or JSON extraction before concluding no data exists.
+9. For 'today': start_time >= strftime('%s', 'now', 'start of day'). For 'last hour': start_time >= strftime('%s', 'now') - 3600.
+10. The `zones` column is a JSON array. Use LIKE '%zone_name%' for simple filtering or EXISTS (SELECT 1 FROM json_each(zones) WHERE value='zone_name') for precise matching.
+11. Detection labels: person, car, motorcycle, bicycle, dog, cat. Zones: parking_1, main_gate.
+12. The `recordings` table has path, start_time, end_time, duration for 10-second MP4 segments at /media/frigate/recordings/YYYY-MM-DD/HH/<camera>/MM.SS.mp4.
+13. The `sub_label` column stores recognized person names (e.g., 'moein', 'ahmad'), 'unknown' for unrecognized faces, comma-separated for multiple faces, or NULL. When a user asks about a person by name, filter with sub_label LIKE '%name%' alongside label='person'. Never use label='person_name'. For "who was seen", query DISTINCT sub_label WHERE sub_label IS NOT NULL."""
