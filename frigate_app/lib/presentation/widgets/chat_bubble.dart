@@ -6,7 +6,6 @@ import '../providers/chat_provider.dart';
 import '../providers/navigation_provider.dart';
 import '../models/playback_params.dart';
 import 'full_screen_gallery.dart';
-import 'inline_clip_player.dart';
 import 'inline_vod_player.dart';
 
 class ChatBubble extends ConsumerWidget {
@@ -111,10 +110,26 @@ class _EventGallery extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final rows = message.eventRows;
 
+    final galleryItems = rows.map((r) {
+      final id = r['id']?.toString() ?? 'unknown';
+      return GalleryItem(
+        imageUrl: isMockMode
+            ? 'https://picsum.photos/seed/$id/800/600'
+            : 'http://$serverIp:5000/api/events/$id/snapshot.jpg',
+        clipUrl: isMockMode
+            ? 'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4'
+            : 'http://$serverIp:5000/api/events/$id/clip.mp4',
+        label: r['label']?.toString() ?? '',
+        camera: r['camera']?.toString() ?? '',
+      );
+    }).toList();
+
     return Wrap(
       spacing: 10,
       runSpacing: 10,
-      children: rows.map((row) {
+      children: rows.asMap().entries.map((entry) {
+        final index = entry.key;
+        final row = entry.value;
         final eventId = row['id']?.toString() ?? 'unknown';
         final camera = row['camera']?.toString() ?? '';
         final label = row['label']?.toString() ?? '';
@@ -132,17 +147,11 @@ class _EventGallery extends StatelessWidget {
             children: [
               GestureDetector(
                 onTap: () {
-                  final imageUrls = rows.map((r) {
-                    final id = r['id']?.toString() ?? 'unknown';
-                    return isMockMode
-                        ? 'https://picsum.photos/seed/$id/800/600'
-                        : 'http://$serverIp:5000/api/events/$id/snapshot.jpg';
-                  }).toList();
                   Navigator.of(context).push(
                     MaterialPageRoute(
                       builder: (_) => FullScreenGallery(
-                        imageUrls: imageUrls,
-                        initialIndex: rows.indexOf(row),
+                        items: galleryItems,
+                        initialIndex: index,
                       ),
                     ),
                   );
@@ -191,25 +200,11 @@ class _EventGallery extends StatelessWidget {
                           padding: const EdgeInsets.all(6),
                           child: GestureDetector(
                             onTap: () {
-                              final clipUrl = isMockMode
-                                  ? 'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4'
-                                  : 'http://$serverIp:5000/api/events/$eventId/clip.mp4';
                               Navigator.of(context).push(
                                 MaterialPageRoute(
-                                  builder: (_) => Scaffold(
-                                    backgroundColor: Colors.black,
-                                    appBar: AppBar(
-                                      backgroundColor: Colors.black54,
-                                      foregroundColor: Colors.white,
-                                      title: Text('$label - $camera'),
-                                      leading: IconButton(
-                                        icon: const Icon(Icons.close),
-                                        onPressed: () => Navigator.of(context).pop(),
-                                      ),
-                                    ),
-                                    body: Center(
-                                      child: InlineClipPlayer(clipUrl: clipUrl),
-                                    ),
+                                  builder: (_) => FullScreenGallery(
+                                    items: galleryItems,
+                                    initialIndex: index,
                                   ),
                                 ),
                               );
