@@ -49,14 +49,17 @@ class TextToSQLUseCase:
         system_prompt = self._prompt.as_system_prompt()
         attempts = 0
         last_error = ""
+        question = self._enrich_question(request.question)
         logger.info(f"Query received: {request.question}")
+        if question != request.question:
+            logger.info(f"Question enriched: {question}")
 
         for attempt in range(1, request.max_retries + 1):
             attempts = attempt
             user_msg = (
-                request.question
+                question
                 if attempt == 1
-                else f"{request.question}\n\nPrevious attempt failed: {last_error}\nPlease fix the SQL."
+                else f"{question}\n\nPrevious attempt failed: {last_error}\nPlease fix the SQL."
             )
 
             sql_raw = self._llm.generate_sql(user_msg, system_prompt)
@@ -164,6 +167,26 @@ class TextToSQLUseCase:
             lines = [line for line in lines if not line.startswith("```")]
             return "\n".join(lines).strip()
         return raw
+
+    def _enrich_question(self, question: str) -> str:
+        """Inject sub_label hints when person names are detected in the question."""
+        import re
+        known_names = ["moein", "soleymani", "ahmad", "ali", "reza", "sara"]
+        question_lower = question.lower()
+        hints = []
+        for name in known_names:
+            if re.search(r'\b' + name + r'\b', question_lower):
+                hints.append(
+                    f"NOTE: '{name}' is a person name. Filter using sub_label LIKE '%{name}%' (NOT label='{name}'). "
+                    f"The label column only contains object classes like 'person'."
+                )
+        if any(w in question_lower for w in ["who was seen", "who came", "who visited", "who appeared"]):
+            hints.append("NOTE: To find recognized persons, query DISTINCT sub_label WHERE sub_label IS NOT NULL.")
+        if any(w in question_lower for w in ["unknown face", "unknown person", "unrecognized", "unknown people"]):
+            hints.append("NOTE: Unknown/unrecognized faces have sub_label='unknown'.")
+        if hints:
+            return f"{question}\n\n{' '.join(hints)}"
+        return question
 
     def _format_result(self, result: QueryResult) -> str:
         if not result.columns:

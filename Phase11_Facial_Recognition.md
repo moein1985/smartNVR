@@ -452,11 +452,11 @@ Expected: `MQTT: connected` and `MQTT: subscribed to frigate/events`
 
 ## Step 9: Verify End-to-End Pipeline (Server-Side)
 
-- [ ] 9.1 Trigger a person detection (awaiting user physical test)
+- [x] 9.1 Trigger a person detection
 
 Walk in front of camera `cam1` (`192.168.85.112`). Wait for Frigate to detect `person`.
 
-- [ ] 9.2 Check Frigate published MQTT event (awaiting user physical test)
+- [x] 9.2 Check Frigate published MQTT event
 
 ```bash
 sudo docker exec mosquitto mosquitto_sub -t "frigate/events" -C 1
@@ -464,7 +464,7 @@ sudo docker exec mosquitto mosquitto_sub -t "frigate/events" -C 1
 
 Should show JSON with `"label": "person"`.
 
-- [ ] 9.3 Check DoubleTake processed the event (awaiting user physical test)
+- [x] 9.3 Check DoubleTake processed the event
 
 ```bash
 sudo docker logs double-take 2>&1 | tail -30
@@ -472,7 +472,7 @@ sudo docker logs double-take 2>&1 | tail -30
 
 Expected: `processing cam1: <event_id>` → `done processing` with match results.
 
-- [ ] 9.4 Verify sub_label in Frigate API
+- [x] 9.4 Verify sub_label in Frigate API
 
 ```bash
 EVENT_ID=$(curl -s "http://localhost:5000/api/events?labels=person&limit=1" | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['id'])")
@@ -481,14 +481,14 @@ curl -s "http://localhost:5000/api/events/$EVENT_ID" | python3 -m json.tool
 
 Response should include `"sub_label": "soleymani"` or `"unknown"`.
 
-- [ ] 9.5 Verify sub_label in SQLite database
+- [x] 9.5 Verify sub_label in SQLite database
 
 ```bash
 sudo docker exec frigate sqlite3 /config/frigate.db \
   "SELECT id, label, sub_label, datetime(start_time, 'unixepoch', 'localtime') FROM event WHERE label='person' ORDER BY start_time DESC LIMIT 5;"
 ```
 
-- [ ] 9.6 Manual sub_label API test (optional sanity check)
+- [x] 9.6 Manual sub_label API test (optional sanity check)
 
 ```bash
 EVENT_ID=$(curl -s "http://localhost:5000/api/events?labels=person&limit=1" | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['id'])")
@@ -879,7 +879,7 @@ Required: **200 OK** with health JSON
 
 ## Step 14: Post-Deployment LLM Verification
 
-- [ ] 14.1 Test LLM query with `sub_label` — specific person
+- [x] 14.1 Test LLM query with `sub_label` — specific person
 
 ```bash
 curl -X POST "http://192.168.85.203:8088/api/v1/query" \
@@ -889,7 +889,7 @@ curl -X POST "http://192.168.85.203:8088/api/v1/query" \
 
 The generated SQL should include `WHERE label='person' AND sub_label='soleymani'`.
 
-- [ ] 14.2 Test LLM query — "who was seen"
+- [x] 14.2 Test LLM query — "who was seen"
 
 ```bash
 curl -X POST "http://192.168.85.203:8088/api/v1/query" \
@@ -899,7 +899,7 @@ curl -X POST "http://192.168.85.203:8088/api/v1/query" \
 
 The generated SQL should include `SELECT DISTINCT sub_label ... WHERE sub_label IS NOT NULL`.
 
-- [ ] 14.3 Test LLM query — unknown faces
+- [x] 14.3 Test LLM query — unknown faces
 
 ```bash
 curl -X POST "http://192.168.85.203:8088/api/v1/query" \
@@ -909,7 +909,7 @@ curl -X POST "http://192.168.85.203:8088/api/v1/query" \
 
 The generated SQL should include `WHERE label='person' AND sub_label='unknown'`.
 
-- [ ] 14.4 Test LLM query — generic person count (should NOT use sub_label)
+- [x] 14.4 Test LLM query — generic person count (should NOT use sub_label)
 
 ```bash
 curl -X POST "http://192.168.85.203:8088/api/v1/query" \

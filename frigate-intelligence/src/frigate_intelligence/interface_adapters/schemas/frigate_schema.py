@@ -21,7 +21,7 @@ Key table: event (id VARCHAR, label VARCHAR, camera VARCHAR, start_time DATETIME
 Time format: Unix timestamps (float, seconds since epoch)
 Camera: cam1
 Labels: person, car, motorcycle, bicycle, dog, cat
-Sub-labels: recognized person names (e.g., 'soleymani'), 'unknown', or NULL
+Sub-labels: recognized person names (e.g., 'moein'), 'unknown', or NULL
 Zones: configured via Frigate UI (e.g., parking_1, main_gate)"""
 
 
@@ -94,7 +94,7 @@ ORDER BY hour;
 -- Find events where a specific person was recognized
 SELECT id, label, sub_label, camera, datetime(start_time, 'unixepoch', 'localtime') as start_time
 FROM event
-WHERE label='person' AND sub_label='soleymani'
+WHERE label='person' AND sub_label LIKE '%moein%'
 ORDER BY start_time DESC LIMIT 50;
 
 -- Find all recognized persons in the last 24 hours
@@ -111,7 +111,7 @@ ORDER BY appearances DESC;
 SELECT id, camera, datetime(start_time, 'unixepoch', 'localtime') as start_time,
        datetime(end_time, 'unixepoch', 'localtime') as end_time
 FROM event
-WHERE label='person' AND sub_label='soleymani'
+WHERE label='person' AND sub_label LIKE '%moein%'
   AND start_time BETWEEN strftime('%s', 'now', 'start of day', '-1 day')
                      AND strftime('%s', 'now', 'start of day')
 ORDER BY start_time ASC;
@@ -129,7 +129,9 @@ WHERE label='person' AND sub_label='unknown'
 ORDER BY start_time DESC LIMIT 50;"""
 
 
-SQL_RULES = """1. Generate ONLY SELECT queries. No INSERT, UPDATE, DELETE, DROP, ALTER, or ATTACH.
+SQL_RULES = """CRITICAL BEFORE GENERATING SQL: If the user mentions a person NAME (e.g., "moein", "Moein", "soleymani", "ahmad"), you MUST use `sub_label` column to filter, NEVER the `label` column. The `label` column only contains object classes like 'person', 'car'. Person names are stored in `sub_label`. Example: "Was moein seen?" -> WHERE label='person' AND sub_label LIKE '%moein%'. WRONG: WHERE label='moein'.
+
+1. Generate ONLY SELECT queries. No INSERT, UPDATE, DELETE, DROP, ALTER, or ATTACH.
 2. Use SQLite syntax (json_extract for JSON fields).
 3. CRITICAL: Database time columns (start_time, end_time, timestamp) are stored as Unix timestamps (float). Whenever you SELECT these columns for the final answer, you MUST format them using datetime(column_name, 'unixepoch', 'localtime'). Never return raw unix timestamps to the user.
 4. CRITICAL: The standalone `score` and `top_score` columns are often NULL in Frigate 0.18+. To analyze or retrieve detection confidence scores, you MUST use SQLite's JSON functions to extract from the `data` column: json_extract(data, '$.score'). Do NOT use the `score` column directly.
@@ -144,8 +146,8 @@ SQL_RULES = """1. Generate ONLY SELECT queries. No INSERT, UPDATE, DELETE, DROP,
 13. Available detection labels: person, car, motorcycle, bicycle, dog, cat.
 14. Available zones: parking_1, main_gate (defined in Frigate config). If the user mentions a zone by description (e.g., "parking area"), map it to the closest zone name.
 15. The `recordings` table has `path`, `start_time`, `end_time`, `duration` for 10-second MP4 segments stored at /media/frigate/recordings/YYYY-MM-DD/HH/<camera>/MM.SS.mp4.
-16. CRITICAL: The `sub_label` column contains the recognized person's name when facial recognition is active. Values can be a single name (e.g., 'soleymani'), comma-separated names for multiple faces (e.g., 'soleymani, ahmad'), 'unknown' for unrecognized faces, or NULL if no facial recognition was performed.
-17. When the user asks about a specific person by name (e.g., "Was soleymani at his desk?"), you MUST filter on `sub_label='person_name'` in addition to `label='person'`. Do NOT search by the `label` column alone — `label` only contains the object class ('person'), not the identity.
+16. CRITICAL: The `sub_label` column contains the recognized person's name when facial recognition is active. Values can be a single name (e.g., 'moein'), comma-separated names for multiple faces (e.g., 'moein, ahmad'), 'unknown' for unrecognized faces, or NULL if no facial recognition was performed.
+17. When the user asks about a specific person by name (e.g., "Was moein seen?"), you MUST filter on `sub_label LIKE '%person_name%'` in addition to `label='person'`. Do NOT search by the `label` column alone — `label` only contains the object class ('person'), not the identity. CORRECT: WHERE label='person' AND sub_label LIKE '%moein%'. WRONG: WHERE label='moein'.
 18. When the user asks "who was seen" or "who came today", query `SELECT DISTINCT sub_label FROM event WHERE label='person' AND sub_label IS NOT NULL`.
 19. When the user asks about "unknown" or "unrecognized" people, filter on `sub_label='unknown'`.
 20. The `sub_label` may contain comma-separated values for multiple faces. Use `LIKE '%person_name%'` for flexible matching, or exact match `sub_label='person_name'` for single-face events."""
