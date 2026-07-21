@@ -19,7 +19,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Frigate Intelligence'), findsOneWidget);
-    expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.settings_outlined), findsNWidgets(2));
     expect(find.byIcon(Icons.mic_none), findsOneWidget);
     expect(find.byIcon(Icons.send_rounded), findsOneWidget);
   });
