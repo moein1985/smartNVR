@@ -1,12 +1,18 @@
 from frigate_intelligence.use_cases.text_to_sql.text_to_sql_use_case import (
     TextToSQLResponse,
 )
-from frigate_intelligence.interface_adapters.schemas.api_models import QueryResponse
+from frigate_intelligence.interface_adapters.schemas.api_models import (
+    QueryResponse,
+    PlaybackIntent,
+)
 
 
 class APIPresenter:
     @staticmethod
     def to_query_response(response: TextToSQLResponse) -> QueryResponse:
+        playback_intent = None
+        if response.playback_intent:
+            playback_intent = PlaybackIntent(**response.playback_intent)
         return QueryResponse(
             question=response.question,
             sql=response.sql,
@@ -16,4 +22,6 @@ class APIPresenter:
             explanation=response.explanation,
             attempts=response.attempts,
             error=response.result.error,
+            intent=response.intent,
+            playback_intent=playback_intent,
         )

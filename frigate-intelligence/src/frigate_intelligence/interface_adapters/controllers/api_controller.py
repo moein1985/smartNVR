@@ -92,6 +92,8 @@ class APIController:
                 "row_count": result.result.row_count,
                 "attempts": result.attempts,
                 "error": result.result.error,
+                "intent": result.intent,
+                "playback_intent": result.playback_intent,
             }
             yield f"data: {json.dumps(meta)}\n\n"
 

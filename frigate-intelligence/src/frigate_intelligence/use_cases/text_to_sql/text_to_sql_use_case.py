@@ -25,6 +25,8 @@ class TextToSQLResponse:
     result: QueryResult
     explanation: str
     attempts: int
+    intent: str = "event_query"
+    playback_intent: dict | None = None
 
 
 @dataclass
@@ -34,6 +36,8 @@ class TextToSQLStreamResult:
     result: QueryResult
     attempts: int
     explanation_stream: Generator[str, None, None]
+    intent: str = "event_query"
+    playback_intent: dict | None = None
 
 
 class TextToSQLUseCase:
@@ -53,21 +57,49 @@ class TextToSQLUseCase:
             logger.info("[TimeSync] Prompt rebuilt with client timezone context")
         else:
             system_prompt = self._prompt.as_system_prompt()
+        logger.info(f"Query received: {request.question}")
+
+        smart = self._llm.smart_query(request.question, system_prompt)
+        intent = smart.get("intent", "event_query")
+        logger.info(f"Smart query intent: {intent}")
+
+        if intent == "playback_query":
+            playback = self._build_playback_intent(smart)
+            explanation = smart.get("explanation", "Playback requested.")
+            logger.info(f"Playback intent: {playback}")
+            return TextToSQLResponse(
+                question=request.question,
+                sql="",
+                result=QueryResult(
+                    sql="",
+                    columns=[],
+                    rows=[],
+                    row_count=0,
+                ),
+                explanation=explanation,
+                attempts=1,
+                intent="playback_query",
+                playback_intent=playback,
+            )
+
+        sql = self._extract_sql(smart.get("sql", ""))
         attempts = 0
         last_error = ""
-        question = request.question
-        logger.info(f"Query received: {request.question}")
 
         for attempt in range(1, request.max_retries + 1):
             attempts = attempt
             user_msg = (
-                question
+                request.question
                 if attempt == 1
-                else f"{question}\n\nPrevious attempt failed: {last_error}\nPlease fix the SQL."
+                else f"{request.question}\n\nPrevious attempt failed: {last_error}\nPlease fix the SQL."
             )
 
-            sql_raw = self._llm.generate_sql(user_msg, system_prompt)
-            sql = self._extract_sql(sql_raw)
+            if attempt == 1:
+                sql_raw = sql
+            else:
+                sql_raw = self._llm.generate_sql(user_msg, system_prompt)
+                sql_raw = self._extract_sql(sql_raw)
+            sql = sql_raw
             logger.info(f"Attempt {attempts} - Generated SQL: {sql}")
 
             is_valid, error = SQLValidator.validate(sql)
@@ -91,6 +123,7 @@ class TextToSQLUseCase:
                 result=result,
                 explanation=explanation,
                 attempts=attempts,
+                intent="event_query",
             )
 
         logger.error(f"Query failed after {attempts} attempts. Last error: {last_error}")
@@ -106,6 +139,7 @@ class TextToSQLUseCase:
             ),
             explanation=f"Failed after {attempts} attempts. Last error: {last_error}",
             attempts=attempts,
+            intent="event_query",
         )
 
     def execute_streaming(self, request: TextToSQLRequest) -> TextToSQLStreamResult:
@@ -115,9 +149,34 @@ class TextToSQLUseCase:
             logger.info("[TimeSync] Stream prompt rebuilt with client timezone context")
         else:
             system_prompt = self._prompt.as_system_prompt()
+        logger.info(f"Stream query received: {request.question}")
+
+        smart = self._llm.smart_query(request.question, system_prompt)
+        intent = smart.get("intent", "event_query")
+        logger.info(f"Stream smart query intent: {intent}")
+
+        if intent == "playback_query":
+            playback = self._build_playback_intent(smart)
+            explanation = smart.get("explanation", "Playback requested.")
+            logger.info(f"Stream playback intent: {playback}")
+            return TextToSQLStreamResult(
+                question=request.question,
+                sql="",
+                result=QueryResult(
+                    sql="",
+                    columns=[],
+                    rows=[],
+                    row_count=0,
+                ),
+                attempts=1,
+                explanation_stream=iter([explanation]),
+                intent="playback_query",
+                playback_intent=playback,
+            )
+
+        sql = self._extract_sql(smart.get("sql", ""))
         attempts = 0
         last_error = ""
-        logger.info(f"Stream query received: {request.question}")
 
         for attempt in range(1, request.max_retries + 1):
             attempts = attempt
@@ -127,8 +186,12 @@ class TextToSQLUseCase:
                 else f"{request.question}\n\nPrevious attempt failed: {last_error}\nPlease fix the SQL."
             )
 
-            sql_raw = self._llm.generate_sql(user_msg, system_prompt)
-            sql = self._extract_sql(sql_raw)
+            if attempt == 1:
+                sql_raw = sql
+            else:
+                sql_raw = self._llm.generate_sql(user_msg, system_prompt)
+                sql_raw = self._extract_sql(sql_raw)
+            sql = sql_raw
             logger.info(f"Attempt {attempts} - Generated SQL: {sql}")
 
             is_valid, error = SQLValidator.validate(sql)
@@ -152,6 +215,7 @@ class TextToSQLUseCase:
                 result=result,
                 attempts=attempts,
                 explanation_stream=stream,
+                intent="event_query",
             )
 
         logger.error(f"Stream query failed after {attempts} attempts. Last error: {last_error}")
@@ -167,6 +231,7 @@ class TextToSQLUseCase:
             ),
             attempts=attempts,
             explanation_stream=iter([f"Failed after {attempts} attempts. Last error: {last_error}"]),
+            intent="event_query",
         )
 
     def _extract_sql(self, raw: str) -> str:
@@ -176,6 +241,40 @@ class TextToSQLUseCase:
             lines = [line for line in lines if not line.startswith("```")]
             return "\n".join(lines).strip()
         return raw
+
+    def _build_playback_intent(self, smart: dict) -> dict:
+        """Extract playback intent fields from smart_query JSON response."""
+        import datetime as dt
+
+        camera = smart.get("camera") or "cam1"
+        start_str = smart.get("start_time")
+        end_str = smart.get("end_time")
+
+        start_time = 0.0
+        end_time = 0.0
+        date_str = ""
+
+        if start_str:
+            try:
+                start_time = dt.datetime.fromisoformat(start_str).timestamp()
+                date_str = dt.datetime.fromisoformat(start_str).strftime("%Y-%m-%d")
+            except (ValueError, TypeError):
+                pass
+        if end_str:
+            try:
+                end_time = dt.datetime.fromisoformat(end_str).timestamp()
+            except (ValueError, TypeError):
+                pass
+
+        if not date_str:
+            date_str = dt.date.today().isoformat()
+
+        return {
+            "camera": camera,
+            "start_time": start_time,
+            "end_time": end_time,
+            "date": date_str,
+        }
 
     def _format_result(self, result: QueryResult) -> str:
         if not result.columns:

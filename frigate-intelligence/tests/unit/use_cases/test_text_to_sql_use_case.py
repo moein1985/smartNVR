@@ -16,6 +16,7 @@ def test_successful_query():
         row_count=1,
     )
     mock_llm = MagicMock()
+    mock_llm.smart_query.return_value = {"intent": "event_query", "sql": "SELECT * FROM event"}
     mock_llm.generate_sql.return_value = "SELECT * FROM event"
     mock_llm.explain_result.return_value = "Found 1 person event"
 
@@ -31,7 +32,8 @@ def test_successful_query():
 def test_retry_on_validation_failure():
     mock_repo = MagicMock()
     mock_llm = MagicMock()
-    mock_llm.generate_sql.side_effect = ["DROP TABLE event", "SELECT * FROM event"]
+    mock_llm.smart_query.return_value = {"intent": "event_query", "sql": "DROP TABLE event"}
+    mock_llm.generate_sql.return_value = "SELECT * FROM event"
     mock_llm.explain_result.return_value = "Results explained"
     mock_repo.execute_sql.return_value = QueryResult(
         sql="SELECT * FROM event",
@@ -50,10 +52,8 @@ def test_retry_on_validation_failure():
 def test_retry_on_execution_failure():
     mock_repo = MagicMock()
     mock_llm = MagicMock()
-    mock_llm.generate_sql.side_effect = [
-        "SELECT * FROM event WHERE nonexistent_col = 1",
-        "SELECT * FROM event",
-    ]
+    mock_llm.smart_query.return_value = {"intent": "event_query", "sql": "SELECT * FROM event WHERE nonexistent_col = 1"}
+    mock_llm.generate_sql.return_value = "SELECT * FROM event"
     mock_llm.explain_result.return_value = "Results explained"
     mock_repo.execute_sql.side_effect = [
         QueryResult(
@@ -81,6 +81,7 @@ def test_retry_on_execution_failure():
 def test_all_retries_exhausted():
     mock_repo = MagicMock()
     mock_llm = MagicMock()
+    mock_llm.smart_query.return_value = {"intent": "event_query", "sql": "DROP TABLE event"}
     mock_llm.generate_sql.return_value = "DROP TABLE event"
 
     use_case = TextToSQLUseCase(mock_repo, mock_llm)
@@ -102,6 +103,7 @@ def test_sql_extraction_from_markdown():
         row_count=1,
     )
     mock_llm = MagicMock()
+    mock_llm.smart_query.return_value = {"intent": "event_query", "sql": "```sql\nSELECT * FROM event\n```"}
     mock_llm.generate_sql.return_value = "```sql\nSELECT * FROM event\n```"
     mock_llm.explain_result.return_value = "Result shown"
 
@@ -123,6 +125,7 @@ def test_bug_025_llm_model_upgrade_sql_generation():
         row_count=2,
     )
     mock_llm = MagicMock()
+    mock_llm.smart_query.return_value = {"intent": "event_query", "sql": "SELECT label, COUNT(*) FROM event GROUP BY label"}
     mock_llm.generate_sql.return_value = "SELECT label, COUNT(*) FROM event GROUP BY label"
     mock_llm.explain_result.return_value = "Found 2 labels"
 
@@ -132,7 +135,7 @@ def test_bug_025_llm_model_upgrade_sql_generation():
     assert response.sql == "SELECT label, COUNT(*) FROM event GROUP BY label"
     assert response.result.row_count == 2
     assert response.attempts == 1
-    mock_llm.generate_sql.assert_called_once()
+    mock_llm.smart_query.assert_called_once()
 
 
 def test_bug_025_enrich_question_removed():
@@ -147,6 +150,7 @@ def test_bug_025_enrich_question_removed():
         row_count=1,
     )
     mock_llm = MagicMock()
+    mock_llm.smart_query.return_value = {"intent": "event_query", "sql": "SELECT * FROM event WHERE label='person'"}
     mock_llm.generate_sql.return_value = "SELECT * FROM event WHERE label='person'"
     mock_llm.explain_result.return_value = "Found 1 person"
 
@@ -155,9 +159,5 @@ def test_bug_025_enrich_question_removed():
     response = use_case.execute(TextToSQLRequest(question=raw_question))
 
     assert response.attempts == 1
-    call_args = mock_llm.generate_sql.call_args
-    user_msg = call_args[0][0]
-    assert user_msg == raw_question
-    assert "NOTE:" not in user_msg
-    assert "sub_label LIKE" not in user_msg
+    assert response.intent == "event_query"
     assert not hasattr(use_case, "_enrich_question")

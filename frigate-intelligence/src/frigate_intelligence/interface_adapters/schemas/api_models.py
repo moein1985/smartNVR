@@ -10,6 +10,13 @@ class QueryRequest(BaseModel):
     client_timestamp: float | None = None
 
 
+class PlaybackIntent(BaseModel):
+    camera: str
+    start_time: float
+    end_time: float
+    date: str
+
+
 class QueryResponse(BaseModel):
     question: str
     sql: str
@@ -19,6 +26,8 @@ class QueryResponse(BaseModel):
     explanation: str
     attempts: int
     error: str | None = None
+    intent: str = "event_query"
+    playback_intent: PlaybackIntent | None = None
 
 
 class EventItem(BaseModel):
