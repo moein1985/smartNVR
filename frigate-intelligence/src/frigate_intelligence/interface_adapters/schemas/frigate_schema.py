@@ -17,10 +17,11 @@ def load_schema_context() -> str:
         return SCHEMA_REPORT_PATH.read_text(encoding="utf-8")
     return """Frigate SQLite Database Schema:
 Tables: event, recordings, timeline, reviewsegment, previews, regions, user
-Key table: event (id VARCHAR, label VARCHAR, camera VARCHAR, start_time DATETIME, end_time DATETIME, score REAL, zones JSON, data JSON)
+Key table: event (id VARCHAR, label VARCHAR, camera VARCHAR, start_time DATETIME, end_time DATETIME, score REAL, sub_label VARCHAR, zones JSON, data JSON)
 Time format: Unix timestamps (float, seconds since epoch)
 Camera: cam1
 Labels: person, car, motorcycle, bicycle, dog, cat
+Sub-labels: recognized person names (e.g., 'soleymani'), 'unknown', or NULL
 Zones: configured via Frigate UI (e.g., parking_1, main_gate)"""
 
 
@@ -88,7 +89,44 @@ SELECT label, strftime('%H', datetime(start_time, 'unixepoch', 'localtime')) as 
 FROM event
 WHERE start_time > strftime('%s','now','-1 day')
 GROUP BY label, hour
-ORDER BY hour;"""
+ORDER BY hour;
+
+-- Find events where a specific person was recognized
+SELECT id, label, sub_label, camera, datetime(start_time, 'unixepoch', 'localtime') as start_time
+FROM event
+WHERE label='person' AND sub_label='soleymani'
+ORDER BY start_time DESC LIMIT 50;
+
+-- Find all recognized persons in the last 24 hours
+SELECT sub_label, COUNT(*) as appearances,
+       datetime(MIN(start_time), 'unixepoch', 'localtime') as first_seen,
+       datetime(MAX(start_time), 'unixepoch', 'localtime') as last_seen
+FROM event
+WHERE label='person' AND sub_label IS NOT NULL
+  AND start_time >= strftime('%s', 'now', '-1 day')
+GROUP BY sub_label
+ORDER BY appearances DESC;
+
+-- Check if a specific person was seen in a time range
+SELECT id, camera, datetime(start_time, 'unixepoch', 'localtime') as start_time,
+       datetime(end_time, 'unixepoch', 'localtime') as end_time
+FROM event
+WHERE label='person' AND sub_label='soleymani'
+  AND start_time BETWEEN strftime('%s', 'now', 'start of day', '-1 day')
+                     AND strftime('%s', 'now', 'start of day')
+ORDER BY start_time ASC;
+
+-- List all unique recognized persons
+SELECT DISTINCT sub_label FROM event
+WHERE label='person' AND sub_label IS NOT NULL
+ORDER BY sub_label;
+
+-- Find unknown persons (detected but not recognized)
+SELECT id, camera, datetime(start_time, 'unixepoch', 'localtime') as start_time
+FROM event
+WHERE label='person' AND sub_label='unknown'
+  AND start_time >= strftime('%s', 'now', '-1 day')
+ORDER BY start_time DESC LIMIT 50;"""
 
 
 SQL_RULES = """1. Generate ONLY SELECT queries. No INSERT, UPDATE, DELETE, DROP, ALTER, or ATTACH.
@@ -105,4 +143,9 @@ SQL_RULES = """1. Generate ONLY SELECT queries. No INSERT, UPDATE, DELETE, DROP,
 12. The `zones` column is a JSON array (e.g., ["parking_1"]). Use `LIKE '%zone_name%'` for simple filtering or `EXISTS (SELECT 1 FROM json_each(zones) WHERE value='zone_name')` for precise matching.
 13. Available detection labels: person, car, motorcycle, bicycle, dog, cat.
 14. Available zones: parking_1, main_gate (defined in Frigate config). If the user mentions a zone by description (e.g., "parking area"), map it to the closest zone name.
-15. The `recordings` table has `path`, `start_time`, `end_time`, `duration` for 10-second MP4 segments stored at /media/frigate/recordings/YYYY-MM-DD/HH/<camera>/MM.SS.mp4."""
+15. The `recordings` table has `path`, `start_time`, `end_time`, `duration` for 10-second MP4 segments stored at /media/frigate/recordings/YYYY-MM-DD/HH/<camera>/MM.SS.mp4.
+16. CRITICAL: The `sub_label` column contains the recognized person's name when facial recognition is active. Values can be a single name (e.g., 'soleymani'), comma-separated names for multiple faces (e.g., 'soleymani, ahmad'), 'unknown' for unrecognized faces, or NULL if no facial recognition was performed.
+17. When the user asks about a specific person by name (e.g., "Was soleymani at his desk?"), you MUST filter on `sub_label='person_name'` in addition to `label='person'`. Do NOT search by the `label` column alone — `label` only contains the object class ('person'), not the identity.
+18. When the user asks "who was seen" or "who came today", query `SELECT DISTINCT sub_label FROM event WHERE label='person' AND sub_label IS NOT NULL`.
+19. When the user asks about "unknown" or "unrecognized" people, filter on `sub_label='unknown'`.
+20. The `sub_label` may contain comma-separated values for multiple faces. Use `LIKE '%person_name%'` for flexible matching, or exact match `sub_label='person_name'` for single-face events."""

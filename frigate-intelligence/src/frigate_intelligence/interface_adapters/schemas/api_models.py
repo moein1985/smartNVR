@@ -21,6 +21,7 @@ class QueryResponse(BaseModel):
 class EventItem(BaseModel):
     id: str
     label: str
+    sub_label: str | None = None
     camera: str
     start_time: float
     end_time: float | None
