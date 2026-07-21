@@ -56,7 +56,15 @@ class MockApiClient implements BaseApiClient {
   @override
   Future<Map<String, dynamic>> health() async {
     await Future.delayed(const Duration(milliseconds: 500));
-    return {'status': 'ok', 'db_connected': true};
+    final now = DateTime.now().toUtc();
+    return {
+      'status': 'ok',
+      'version': '0.1.0',
+      'db_connected': true,
+      'server_timestamp': now.millisecondsSinceEpoch / 1000.0,
+      'server_timezone': 'UTC',
+      'server_datetime_iso': now.toIso8601String(),
+    };
   }
 
   @override

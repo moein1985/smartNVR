@@ -10,11 +10,45 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:frigate_intelligence/main.dart';
+import 'package:frigate_intelligence/presentation/providers/server_config_provider.dart';
+import 'package:frigate_intelligence/data/datasources/api_client.dart';
+
+class _SyncedMockClient implements BaseApiClient {
+  @override
+  Future<Map<String, dynamic>> query(String question, {int maxRetries = 3}) async {
+    return {'sql': '', 'explanation': '', 'columns': [], 'rows': [], 'row_count': 0, 'attempts': 1, 'error': null};
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getEvents({String? camera, String? label}) async => [];
+
+  @override
+  Future<Map<String, dynamic>> health() async {
+    return {
+      'status': 'ok', 'version': '0.1.0', 'db_connected': true,
+      'server_timestamp': DateTime.now().millisecondsSinceEpoch / 1000.0,
+      'server_timezone': 'UTC',
+      'server_datetime_iso': DateTime.now().toUtc().toIso8601String(),
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> getCameras() async => {'cameras': [], 'total': 0};
+
+  @override
+  Future<Map<String, dynamic>> getRecordings({String? camera, String? date, int? hour, double? startTime, double? endTime}) async =>
+      {'segments': [], 'total': 0, 'camera': camera ?? 'all'};
+}
 
 void main() {
   testWidgets('Chat page renders with greeting and input bar', (WidgetTester tester) async {
     await tester.pumpWidget(
-      const ProviderScope(child: FrigateIntelligenceApp()),
+      ProviderScope(
+        overrides: [
+          apiClientProvider.overrideWith((ref) => _SyncedMockClient()),
+        ],
+        child: const FrigateIntelligenceApp(),
+      ),
     );
     await tester.pumpAndSettle();
 

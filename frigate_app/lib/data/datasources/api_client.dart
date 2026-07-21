@@ -42,9 +42,13 @@ class ApiClient implements BaseApiClient {
   @override
   Future<Map<String, dynamic>> query(String question,
       {int maxRetries = 3}) async {
+    final now = DateTime.now();
     final response = await _dio.post('/api/v1/query', data: {
       'question': question,
       'max_retries': maxRetries,
+      'client_timezone': now.timeZoneName,
+      'client_offset_minutes': now.timeZoneOffset.inMinutes,
+      'client_timestamp': now.millisecondsSinceEpoch / 1000.0,
     });
     return response.data as Map<String, dynamic>;
   }

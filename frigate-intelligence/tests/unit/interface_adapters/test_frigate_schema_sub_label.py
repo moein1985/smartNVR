@@ -12,7 +12,7 @@ def test_sample_queries_include_sub_label():
 
 def test_sample_queries_include_specific_person_query():
     """SAMPLE_QUERIES should include a query filtering by specific person name."""
-    assert "sub_label='soleymani'" in SAMPLE_QUERIES
+    assert "sub_label LIKE '%moein%'" in SAMPLE_QUERIES
 
 
 def test_sample_queries_include_unknown_query():

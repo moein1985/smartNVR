@@ -24,15 +24,15 @@
 
 ## Phase 12.2 — Time Synchronization UI (Flutter Frontend)
 
-- [ ] **Step 1:** Create `lib/presentation/providers/time_sync_provider.dart` — `TimeSyncNotifier` with periodic health check, skew calculation, `hasSignificantSkew` getter
-- [ ] **Step 2:** Update `lib/data/datasources/api_client.dart` — `query()` includes `client_timezone`, `client_offset_minutes`, `client_timestamp` in POST body
-- [ ] **Step 3:** Update `lib/presentation/pages/main_scaffold.dart` — wrap `IndexedStack` in `Column` with conditional `MaterialBanner` for skew warning
-- [ ] **Step 4:** Update `lib/main.dart` — initialize `TimeSyncNotifier` on app startup
-- [ ] **Step 5:** Add `bug_024_time_sync_banner_shows_on_skew` in `test/regression_test.dart`
-- [ ] **Step 6:** Add `bug_024_time_sync_no_banner_when_synced` in `test/regression_test.dart`
-- [ ] **Step 7:** Run `flutter analyze` — 0 issues
-- [ ] **Step 8:** Run `flutter test` — all pass
-- [ ] **Step 9:** Update `Phase12_Roadmap.md` and `BUG_FIXING_DISCIPLINE.md` — BUG-024 Fixed
+- [x] **Step 1:** Created `lib/presentation/providers/time_sync_provider.dart` — `TimeSyncNotifier` with periodic health check, skew calculation, `hasSignificantSkew` getter (>2 min threshold)
+- [x] **Step 2:** Updated `lib/data/datasources/api_client.dart` — `query()` includes `client_timezone`, `client_offset_minutes`, `client_timestamp` in POST body
+- [x] **Step 3:** Updated `lib/presentation/pages/main_scaffold.dart` — wrapped body in `Column` with conditional `MaterialBanner` for skew warning
+- [x] **Step 4:** `TimeSyncNotifier` auto-initializes via Riverpod `build()` (no explicit init in `main.dart` needed)
+- [x] **Step 5:** Added `bug_024_time_sync_banner_shows_on_skew` in `test/regression_test.dart`
+- [x] **Step 6:** Added `bug_024_time_sync_no_banner_when_synced` in `test/regression_test.dart`
+- [x] **Step 7:** `flutter analyze` — 0 issues
+- [x] **Step 8:** `flutter test` — 6 passed, 0 failed
+- [x] **Step 9:** Updated `Phase12_Roadmap.md` and `BUG_FIXING_DISCIPLINE.md` — BUG-024 Fixed
 
 ---
 
