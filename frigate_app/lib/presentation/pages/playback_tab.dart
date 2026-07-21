@@ -27,12 +27,18 @@ class _PlaybackTabState extends ConsumerState<PlaybackTab> {
   bool _isPlaying = false;
 
   @override
+  void initState() {
+    super.initState();
+    _initPlayer();
+  }
+
+  @override
   void dispose() {
     _player?.dispose();
     super.dispose();
   }
 
-  Future<void> _initPlayer() async {
+  void _initPlayer() {
     _player = Player();
     _videoController = VideoController(_player!);
     _player!.stream.completed.listen((completed) {
@@ -101,10 +107,6 @@ class _PlaybackTabState extends ConsumerState<PlaybackTab> {
   @override
   Widget build(BuildContext context) {
     final camerasAsync = ref.watch(cameraListProvider);
-
-    if (_player == null) {
-      _initPlayer();
-    }
 
     return Column(
       children: [

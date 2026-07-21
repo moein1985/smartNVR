@@ -40,10 +40,9 @@ dependencies:
   flutter_markdown: ^0.7.7+1
   cached_network_image: ^3.4.1
   shared_preferences: ^2.5.5
-  flutter_webrtc: ^1.0.0
   media_kit: ^1.2.0
   media_kit_video: ^1.2.0
-  media_kit_libs_android_video: ^1.0.5
+  media_kit_libs_video: ^1.0.5
   intl: ^0.20.2
 
 dev_dependencies:
