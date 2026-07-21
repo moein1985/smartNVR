@@ -33,18 +33,15 @@ cameras:
     enabled: true
     ffmpeg:
       inputs:
-        - path: rtsp://admin:admin123@192.168.85.112:554/Streaming/Channels/102
-          input_args: preset-rtsp-generic
-          roles:
-            - detect
         - path: rtsp://admin:admin123@192.168.85.112:554/Streaming/Channels/101
           input_args: preset-rtsp-generic
           roles:
+            - detect
             - record
     detect:
       enabled: true
-      width: 640
-      height: 480
+      width: 1280
+      height: 720
       fps: 5
     objects:
       track:
@@ -64,9 +61,18 @@ cameras:
       crop: true
       quality: 90
       height: 500
+    snapshots:
+      enabled: true
+      clean_copy: true
+      quality: 95
 
 record:
   enabled: true
   retain:
     days: 7
     mode: motion
+
+snapshots:
+  enabled: true
+  clean_copy: true
+  quality: 95
