@@ -81,12 +81,12 @@
 
 ## Phase 12.6 — Inline Clip Playback for VOD Ranges
 
-- [ ] **Step 1:** Create `lib/presentation/widgets/inline_vod_player.dart` — widget with `media_kit` player for VOD clips
-- [ ] **Step 2:** Update `lib/presentation/widgets/chat_bubble.dart` — render `InlineVodPlayer` below deep link button for `playback_query`
-- [ ] **Step 3:** Update `lib/data/datasources/api_client.dart` — add `getVodClipUrl()` helper
-- [ ] **Step 4:** Add `bug_028_inline_vod_player_constructs_url` in `test/regression_test.dart`
-- [ ] **Step 5:** Run `flutter analyze` and `flutter test` — all pass
-- [ ] **Step 6:** Update `Phase12_Roadmap.md` and `BUG_FIXING_DISCIPLINE.md` — BUG-028 Fixed
+- [x] **Step 1:** Created `lib/presentation/widgets/inline_vod_player.dart` — `ConsumerStatefulWidget` with `media_kit` Player, `VideoController`, static `constructVodUrl()` method, 200px constrained height, rounded border, loading/error states
+- [x] **Step 2:** Updated `lib/presentation/widgets/chat_bubble.dart` — renders `InlineVodPlayer` below `_PlaybackDeepLinkButton` for `playback_query` intent
+- [x] **Step 3:** URL construction is handled via `InlineVodPlayer.constructVodUrl()` static method (no separate `api_client.dart` helper needed)
+- [x] **Step 4:** Added `bug_028_inline_vod_player_constructs_url` in `test/regression_test.dart`
+- [x] **Step 5:** `flutter analyze` — 0 issues; `flutter test` — 9 passed, 0 failed
+- [x] **Step 6:** Updated `Phase12_Roadmap.md` and `BUG_FIXING_DISCIPLINE.md` — BUG-028 Fixed
 
 ---
 

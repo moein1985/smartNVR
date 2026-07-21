@@ -7,6 +7,7 @@ import '../providers/navigation_provider.dart';
 import '../models/playback_params.dart';
 import 'full_screen_gallery.dart';
 import 'inline_clip_player.dart';
+import 'inline_vod_player.dart';
 
 class ChatBubble extends ConsumerWidget {
   final ChatMessage message;
@@ -84,6 +85,10 @@ class ChatBubble extends ConsumerWidget {
               _PlaybackDeepLinkButton(
                 playbackIntent: message.playbackIntent!,
                 ref: ref,
+              ),
+              const SizedBox(height: 8),
+              InlineVodPlayer(
+                params: PlaybackParams.fromJson(message.playbackIntent!),
               ),
             ],
           ],

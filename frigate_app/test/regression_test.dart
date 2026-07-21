@@ -7,6 +7,7 @@ import 'package:frigate_intelligence/presentation/providers/live_stream_provider
 import 'package:frigate_intelligence/presentation/providers/server_config_provider.dart';
 import 'package:frigate_intelligence/presentation/providers/navigation_provider.dart';
 import 'package:frigate_intelligence/presentation/models/playback_params.dart';
+import 'package:frigate_intelligence/presentation/widgets/inline_vod_player.dart';
 import 'package:frigate_intelligence/data/datasources/api_client.dart';
 
 void main() {
@@ -185,6 +186,24 @@ void main() {
         'date': '2026-07-21',
       });
       expect(params, same);
+    });
+  });
+
+  group('InlineVodPlayer', () {
+    test('bug_028_inline_vod_player_constructs_url', () {
+      // Regression test for BUG-028: InlineVodPlayer should construct
+      // the correct Frigate VOD clip URL from PlaybackParams + server IP.
+      final params = PlaybackParams(
+        camera: 'cam1',
+        date: '2026-07-21',
+        startTime: 1784394000.0,
+        endTime: 1784395800.0,
+      );
+
+      final url = InlineVodPlayer.constructVodUrl('192.168.85.203', params);
+
+      expect(url,
+          'http://192.168.85.203:5000/api/cam1/start/1784394000/end/1784395800/clip.mp4');
     });
   });
 }
