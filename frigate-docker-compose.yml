@@ -27,3 +27,73 @@ services:
       - "8555:8555/udp"
     environment:
       FRIGATE_RTSP_PASSWORD: "frigate_rtsp_pass"
+    depends_on:
+      - mosquitto
+    networks:
+      - frigate_net
+
+  mosquitto:
+    container_name: mosquitto
+    image: eclipse-mosquitto:2
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    volumes:
+      - /opt/mosquitto/config:/mosquitto/config
+      - /opt/mosquitto/data:/mosquitto/data
+      - /opt/mosquitto/log:/mosquitto/log
+    networks:
+      - frigate_net
+
+  compreface-core:
+    container_name: compreface-core
+    image: exadel/compreface:1.1.0-arcface-r100
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - compreface-db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_URL=jdbc:postgresql://compreface-db:5432/frigate
+      - SPRING_PROFILES_ACTIVE=api
+      - API_IMG_LENGTH_LIMIT=640
+      - CONNECTOR_TIMEOUT=10000
+      - ML_PORT=3000
+      - UWSGI_PROCESSES=2
+      - UWSGI_THREADS=1
+    depends_on:
+      - compreface-db
+    networks:
+      - frigate_net
+
+  compreface-db:
+    container_name: compreface-db
+    image: exadel/compreface-postgres-db:1.1.0
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=frigate
+    networks:
+      - frigate_net
+
+  double-take:
+    container_name: double-take
+    image: jakowenko/double-take:latest
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    volumes:
+      - /opt/double-take:/double-take/data
+    depends_on:
+      - mosquitto
+      - compreface-core
+    networks:
+      - frigate_net
+
+networks:
+  frigate_net:
+    driver: bridge
+
+volumes:
+  compreface-db:

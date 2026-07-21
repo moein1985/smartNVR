@@ -22,7 +22,11 @@ go2rtc:
       - 192.168.85.203:8555
 
 mqtt:
-  enabled: false
+  enabled: true
+  host: mosquitto
+  port: 1883
+  topic_prefix: frigate
+  client_id: frigate
 
 cameras:
   cam1:
@@ -42,7 +46,8 @@ cameras:
       width: 640
       height: 480
       fps: 5
-      objects:
+    objects:
+      track:
         - person
         - car
         - motorcycle
@@ -54,6 +59,11 @@ cameras:
       retain:
         days: 7
         mode: motion
+    mqtt:
+      enabled: true
+      crop: true
+      quality: 90
+      height: 500
 
 record:
   enabled: true

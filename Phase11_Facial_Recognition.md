@@ -61,14 +61,14 @@ cmd /c "echo y | plink -ssh -batch -pw 1234321 moein@192.168.85.203 docker ps --
 
 ## Step 1: Create Mosquitto Configuration
 
-- [ ] 1.1 Create Mosquitto directories on server
+- [x] 1.1 Create Mosquitto directories on server
 
 ```bash
 ssh moein@192.168.85.203
 sudo mkdir -p /opt/mosquitto/config /opt/mosquitto/data /opt/mosquitto/log
 ```
 
-- [ ] 1.2 Create Mosquitto config file
+- [x] 1.2 Create Mosquitto config file
 
 ```bash
 sudo tee /opt/mosquitto/config/mosquitto.conf > /dev/null << 'EOF'
@@ -80,7 +80,7 @@ allow_anonymous true
 EOF
 ```
 
-- [ ] 1.3 Set permissions
+- [x] 1.3 Set permissions
 
 ```bash
 sudo chown -R 1883:1883 /opt/mosquitto
@@ -90,7 +90,7 @@ sudo chown -R 1883:1883 /opt/mosquitto
 
 ## Step 2: Create DoubleTake Data Directory
 
-- [ ] 2.1 Create directory
+- [x] 2.1 Create directory
 
 ```bash
 sudo mkdir -p /opt/double-take
@@ -101,7 +101,7 @@ sudo chown -R 1000:1000 /opt/double-take
 
 ## Step 3: Update Docker Compose
 
-- [ ] 3.1 Create unified `docker-compose.yml` at `/opt/frigate/docker-compose.yml`
+- [x] 3.1 Create unified `docker-compose.yml` at `/opt/frigate/docker-compose.yml`
 
 ```yaml
 services:
@@ -211,7 +211,7 @@ volumes:
 
 ## Step 4: Update Frigate Configuration
 
-- [ ] 4.1 Edit `/opt/frigate/config/config.yml` — enable MQTT and camera snapshots
+- [x] 4.1 Edit `/opt/frigate/config/config.yml` — enable MQTT and camera snapshots
 
 ```yaml
 mqtt:
@@ -293,7 +293,7 @@ Key changes: `mqtt.enabled` → `true`, added `cam1.mqtt` section with `crop: tr
 
 ## Step 5: Create DoubleTake Configuration
 
-- [ ] 5.1 Create `/opt/double-take/config.yml`
+- [x] 5.1 Create `/opt/double-take/config.yml`
 
 ```yaml
 mqtt:
@@ -335,7 +335,7 @@ save:
   unknown: true
 ```
 
-- [ ] 5.2 Set ownership
+- [x] 5.2 Set ownership
 
 ```bash
 sudo chown 1000:1000 /opt/double-take/config.yml
@@ -347,39 +347,39 @@ sudo chown 1000:1000 /opt/double-take/config.yml
 
 ## Step 6: Deploy Containers
 
-- [ ] 6.1 Pull all new images
+- [x] 6.1 Pull all new images
 
 ```bash
 cd /opt/frigate
 sudo docker compose pull mosquitto compreface-core compreface-db double-take
 ```
 
-- [ ] 6.2 Start Mosquitto and CompreFace first
+- [x] 6.2 Start Mosquitto and CompreFace first
 
 ```bash
 sudo docker compose up -d mosquitto compreface-db compreface-core
 ```
 
-- [ ] 6.3 Wait for CompreFace to initialize (30–60 seconds)
+- [x] 6.3 Wait for CompreFace to initialize (30–60 seconds)
 
 ```bash
 sudo docker logs -f compreface-core
 # Wait for "Started Application" or similar readiness message
 ```
 
-- [ ] 6.4 Restart Frigate with MQTT enabled
+- [x] 6.4 Restart Frigate with MQTT enabled
 
 ```bash
 sudo docker compose up -d frigate
 ```
 
-- [ ] 6.5 Start DoubleTake
+- [x] 6.5 Start DoubleTake
 
 ```bash
 sudo docker compose up -d double-take
 ```
 
-- [ ] 6.6 Verify all containers are running
+- [x] 6.6 Verify all containers are running
 
 ```bash
 sudo docker ps --format "table {{.Names}}\t{{.Status}}"
@@ -836,7 +836,7 @@ flutter build apk --debug
 
 Required: **Success**
 
-- [ ] 13.6 Docker container health (server-side)
+- [x] 13.6 Docker container health (server-side)
 
 ```bash
 cmd /c "echo y | plink -ssh -batch -pw 1234321 moein@192.168.85.203 docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'"
@@ -844,7 +844,7 @@ cmd /c "echo y | plink -ssh -batch -pw 1234321 moein@192.168.85.203 docker ps --
 
 Required: All 5+ containers running (frigate, mosquitto, compreface-core, compreface-db, double-take, frigate-intelligence, frigate-web-panel)
 
-- [ ] 13.7 Frigate API reachable
+- [x] 13.7 Frigate API reachable
 
 ```bash
 cmd /c "echo y | plink -ssh -batch -pw 1234321 moein@192.168.85.203 curl -s http://localhost:5000/api/config"
@@ -852,7 +852,7 @@ cmd /c "echo y | plink -ssh -batch -pw 1234321 moein@192.168.85.203 curl -s http
 
 Required: **200 OK** with JSON config
 
-- [ ] 13.8 Backend API reachable
+- [x] 13.8 Backend API reachable
 
 ```bash
 cmd /c "echo y | plink -ssh -batch -pw 1234321 moein@192.168.85.203 curl -s http://localhost:8088/health"
