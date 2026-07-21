@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/chat_provider.dart';
+import '../providers/navigation_provider.dart';
+import '../models/playback_params.dart';
 import 'full_screen_gallery.dart';
 import 'inline_clip_player.dart';
 
-class ChatBubble extends StatelessWidget {
+class ChatBubble extends ConsumerWidget {
   final ChatMessage message;
   final bool isMockMode;
   final String serverIp;
@@ -18,7 +21,7 @@ class ChatBubble extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isUser = message.isUser;
@@ -75,6 +78,13 @@ class ChatBubble extends StatelessWidget {
             if (message.hasEvents) ...[
               const SizedBox(height: 12),
               _EventGallery(message: message, isMockMode: isMockMode, serverIp: serverIp),
+            ],
+            if (message.isPlaybackQuery && message.playbackIntent != null) ...[
+              const SizedBox(height: 12),
+              _PlaybackDeepLinkButton(
+                playbackIntent: message.playbackIntent!,
+                ref: ref,
+              ),
             ],
           ],
         ),
@@ -259,6 +269,43 @@ class _EventGallery extends StatelessWidget {
           ),
         );
       }).toList(),
+    );
+  }
+}
+
+class _PlaybackDeepLinkButton extends StatelessWidget {
+  final Map<String, dynamic> playbackIntent;
+  final WidgetRef ref;
+
+  const _PlaybackDeepLinkButton({required this.playbackIntent, required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final camera = playbackIntent['camera']?.toString() ?? 'cam1';
+
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.tonalIcon(
+        onPressed: () {
+          final params = PlaybackParams.fromJson(playbackIntent);
+          ref.read(navigationProvider.notifier).navigateToPlayback(params);
+        },
+        icon: Icon(Icons.play_circle_outline, size: 20, color: colorScheme.primary),
+        label: Text(
+          'پخش ویدیوی $camera',
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: colorScheme.primary,
+          ),
+        ),
+        style: FilledButton.styleFrom(
+          backgroundColor: colorScheme.primaryContainer,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+        ),
+      ),
     );
   }
 }

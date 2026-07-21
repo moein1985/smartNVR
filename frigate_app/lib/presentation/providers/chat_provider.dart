@@ -18,6 +18,20 @@ class ChatMessage {
     return columns.any((c) => c == 'id');
   }
 
+  String get intent {
+    final result = queryResult;
+    if (result == null) return 'event_query';
+    return result['intent']?.toString() ?? 'event_query';
+  }
+
+  Map<String, dynamic>? get playbackIntent {
+    final result = queryResult;
+    if (result == null) return null;
+    return result['playback_intent'] as Map<String, dynamic>?;
+  }
+
+  bool get isPlaybackQuery => intent == 'playback_query';
+
   List<Map<String, dynamic>> get eventRows {
     final result = queryResult;
     if (result == null) return [];

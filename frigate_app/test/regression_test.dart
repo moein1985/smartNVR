@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frigate_intelligence/main.dart';
 import 'package:frigate_intelligence/presentation/providers/live_stream_provider.dart';
 import 'package:frigate_intelligence/presentation/providers/server_config_provider.dart';
+import 'package:frigate_intelligence/presentation/providers/navigation_provider.dart';
+import 'package:frigate_intelligence/presentation/models/playback_params.dart';
 import 'package:frigate_intelligence/data/datasources/api_client.dart';
 
 void main() {
@@ -135,6 +137,54 @@ void main() {
       expect(controller.serverIp, '192.168.85.203');
       expect(controller.status, StreamStatus.idle);
       expect(controller.errorMessage, isEmpty);
+    });
+  });
+
+  group('PlaybackDeepLink', () {
+    test('bug_027_playback_deep_link_navigates', () {
+      // Regression test for BUG-027: navigateToPlayback should set
+      // mainTabIndex=1 (NVR) and nvrSubTabIndex=1 (Playback).
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(navigationProvider.notifier);
+      notifier.navigateToPlayback(PlaybackParams(
+        camera: 'cam1',
+        date: '2026-07-21',
+        startTime: 1784394000.0,
+        endTime: 1784395800.0,
+      ));
+
+      final state = container.read(navigationProvider);
+      expect(state.mainTabIndex, 1);
+      expect(state.nvrSubTabIndex, 1);
+      expect(state.playbackParams, isNotNull);
+      expect(state.playbackParams!.camera, 'cam1');
+    });
+
+    test('bug_027_playback_params_auto_select_camera', () {
+      // Regression test for BUG-027: PlaybackParams.fromJson should parse
+      // the playback intent map correctly with camera, date, start/end times.
+      final params = PlaybackParams.fromJson({
+        'camera': 'cam1',
+        'start_time': 1784394000.0,
+        'end_time': 1784395800.0,
+        'date': '2026-07-21',
+      });
+
+      expect(params.camera, 'cam1');
+      expect(params.date, '2026-07-21');
+      expect(params.startTime, 1784394000.0);
+      expect(params.endTime, 1784395800.0);
+
+      // Verify equality for deduplication in PlaybackTab
+      final same = PlaybackParams.fromJson({
+        'camera': 'cam1',
+        'start_time': 1784394000.0,
+        'end_time': 1784395800.0,
+        'date': '2026-07-21',
+      });
+      expect(params, same);
     });
   });
 }

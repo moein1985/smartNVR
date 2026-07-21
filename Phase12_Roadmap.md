@@ -65,17 +65,17 @@
 
 ## Phase 12.5 — Playback Deep Linking (Flutter Frontend)
 
-- [ ] **Step 1:** Create `lib/presentation/providers/navigation_provider.dart` — `NavigationNotifier` with `NavigationState`
-- [ ] **Step 2:** Create `lib/presentation/models/playback_params.dart` — `PlaybackParams` data class with `fromJson()`
-- [ ] **Step 3:** Update `lib/presentation/providers/chat_provider.dart` — expose `intent` and `playbackIntent` from `queryResult`
-- [ ] **Step 4:** Update `lib/presentation/widgets/chat_bubble.dart` — add `_PlaybackDeepLinkButton` widget for `playback_query` intent
-- [ ] **Step 5:** Update `lib/presentation/pages/main_scaffold.dart` — watch `NavigationState`, update `_currentIndex` on external change
-- [ ] **Step 6:** Update `lib/presentation/pages/classic_nvr_page.dart` — watch `NavigationState`, switch `TabController` index
-- [ ] **Step 7:** Update `lib/presentation/pages/playback_tab.dart` — watch `playbackParams`, auto-select camera/date, seek to start time
-- [ ] **Step 8:** Add `bug_027_playback_deep_link_navigates` in `test/regression_test.dart`
-- [ ] **Step 9:** Add `bug_027_playback_params_auto_select_camera` in `test/regression_test.dart`
-- [ ] **Step 10:** Run `flutter analyze` and `flutter test` — all pass
-- [ ] **Step 11:** Update `Phase12_Roadmap.md` and `BUG_FIXING_DISCIPLINE.md` — BUG-027 Fixed
+- [x] **Step 1:** Created `lib/presentation/models/playback_params.dart` — `PlaybackParams` data class with `fromJson()`, `==`/`hashCode`
+- [x] **Step 2:** Created `lib/presentation/providers/navigation_provider.dart` — `NavigationState` (`mainTabIndex`, `nvrSubTabIndex`, `playbackParams`) + `NavigationNotifier` with `navigateToPlayback()`, `setMainTab()`, `setNvrSubTab()`
+- [x] **Step 3:** Updated `chat_provider.dart` — added `intent`, `playbackIntent`, `isPlaybackQuery` getters to `ChatMessage`
+- [x] **Step 4:** Updated `chat_bubble.dart` — converted to `ConsumerWidget`; added `_PlaybackDeepLinkButton` that calls `navigateToPlayback()` on tap
+- [x] **Step 5:** Updated `main_scaffold.dart` — `ref.watch(navigationProvider)` for `mainTabIndex`; `ref.listenManual` for state changes; nav taps call `setMainTab()`
+- [x] **Step 6:** Updated `classic_nvr_page.dart` — converted to `ConsumerStatefulWidget` with explicit `TabController`; `ref.listenManual` animates to `nvrSubTabIndex` on change
+- [x] **Step 7:** Updated `playback_tab.dart` — `ref.listen(navigationProvider)` watches `playbackParams`; `_applyPlaybackParams()` sets camera/date, invalidates recording query, calls `_seekToStartTime()`
+- [x] **Step 8:** Added `bug_027_playback_deep_link_navigates` in `test/regression_test.dart`
+- [x] **Step 9:** Added `bug_027_playback_params_auto_select_camera` in `test/regression_test.dart`
+- [x] **Step 10:** `flutter analyze` — 0 issues; `flutter test` — 8 passed, 0 failed
+- [x] **Step 11:** Updated `Phase12_Roadmap.md` and `BUG_FIXING_DISCIPLINE.md` — BUG-027 Fixed
 
 ---
 

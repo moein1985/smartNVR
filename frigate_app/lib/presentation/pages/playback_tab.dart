@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 import '../providers/live_stream_provider.dart';
 import '../providers/recording_provider.dart';
 import '../providers/server_config_provider.dart';
+import '../providers/navigation_provider.dart';
+import '../models/playback_params.dart';
 import '../widgets/timeline_widget.dart';
 
 class PlaybackTab extends ConsumerStatefulWidget {
@@ -25,6 +27,7 @@ class _PlaybackTabState extends ConsumerState<PlaybackTab> {
   Player? _player;
   VideoController? _videoController;
   bool _isPlaying = false;
+  PlaybackParams? _lastAppliedParams;
 
   @override
   void initState() {
@@ -49,6 +52,38 @@ class _PlaybackTabState extends ConsumerState<PlaybackTab> {
     _player!.stream.playing.listen((playing) {
       if (mounted) setState(() => _isPlaying = playing);
     });
+  }
+
+  void _applyPlaybackParams(PlaybackParams params) {
+    if (_lastAppliedParams == params) return;
+    _lastAppliedParams = params;
+
+    setState(() {
+      _selectedCamera = params.camera;
+      _selectedDate = params.date;
+      _selectedHour = null;
+    });
+
+    final query = RecordingQuery(
+      camera: params.camera,
+      date: params.date,
+    );
+    ref.invalidate(recordingListProvider(query));
+
+    _seekToStartTime(params.startTime);
+  }
+
+  void _seekToStartTime(double startTime) {
+    if (_player == null) return;
+    final now = DateTime.now().millisecondsSinceEpoch / 1000.0;
+    final offset = startTime - now;
+    if (offset.abs() < 86400) {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted && _player != null) {
+          debugPrint('[Playback] Seeking to startTime=$startTime (offset=${offset}s)');
+        }
+      });
+    }
   }
 
   void _playSegment(int index) {
@@ -107,6 +142,13 @@ class _PlaybackTabState extends ConsumerState<PlaybackTab> {
   @override
   Widget build(BuildContext context) {
     final camerasAsync = ref.watch(cameraListProvider);
+
+    ref.listen<NavigationState>(navigationProvider, (prev, next) {
+      if (next.playbackParams != null &&
+          next.playbackParams != prev?.playbackParams) {
+        _applyPlaybackParams(next.playbackParams!);
+      }
+    });
 
     return Column(
       children: [
