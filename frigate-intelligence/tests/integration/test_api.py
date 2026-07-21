@@ -63,6 +63,9 @@ def test_health_endpoint():
     assert data["status"] == "ok"
     assert data["version"] == "0.1.0"
     assert data["db_connected"] is True
+    assert "server_timestamp" in data
+    assert "server_timezone" in data
+    assert "server_datetime_iso" in data
 
 
 def test_events_endpoint():
@@ -87,3 +90,50 @@ def test_query_with_retries():
         json={"question": "test question", "max_retries": 5},
     )
     assert response.status_code == 200
+
+
+def test_bug_023_health_endpoint_returns_timestamp():
+    """Regression test for BUG-023: Health endpoint must return server timestamp and timezone info."""
+    container = _create_mock_container()
+    app = create_app(container)
+    client = TestClient(app)
+
+    response = client.get("/api/v1/health")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "ok"
+    assert data["version"] == "0.1.0"
+    assert data["db_connected"] is True
+    assert "server_timestamp" in data
+    assert isinstance(data["server_timestamp"], (int, float))
+    assert data["server_timestamp"] > 1_000_000_000
+    assert "server_timezone" in data
+    assert data["server_timezone"] == "UTC"
+    assert "server_datetime_iso" in data
+    assert "T" in data["server_datetime_iso"]
+    assert "+" in data["server_datetime_iso"] or data["server_datetime_iso"].endswith("Z")
+
+
+def test_bug_023_query_accepts_client_timezone():
+    """Regression test for BUG-023: Query endpoint must accept client timezone fields and pass to use case."""
+    container = _create_mock_container()
+    app = create_app(container)
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/v1/query",
+        json={
+            "question": "What happened at 9am today?",
+            "max_retries": 3,
+            "client_timezone": "Asia/Tehran",
+            "client_offset_minutes": 210,
+            "client_timestamp": 1784394600.0,
+        },
+    )
+    assert response.status_code == 200
+
+    called_request = container.text_to_sql_use_case.execute.call_args[0][0]
+    assert called_request.client_tz_info is not None
+    assert called_request.client_tz_info["offset_minutes"] == 210
+    assert called_request.client_tz_info["timezone"] == "Asia/Tehran"
+    assert called_request.client_tz_info["timestamp"] == 1784394600.0

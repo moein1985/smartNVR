@@ -5,6 +5,9 @@ from typing import Any
 class QueryRequest(BaseModel):
     question: str
     max_retries: int = 3
+    client_timezone: str | None = None
+    client_offset_minutes: int | None = None
+    client_timestamp: float | None = None
 
 
 class QueryResponse(BaseModel):
@@ -42,6 +45,9 @@ class HealthResponse(BaseModel):
     status: str
     version: str
     db_connected: bool
+    server_timestamp: float
+    server_timezone: str
+    server_datetime_iso: str
 
 
 class RecordingSegment(BaseModel):

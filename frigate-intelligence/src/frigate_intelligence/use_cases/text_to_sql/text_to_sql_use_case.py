@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 class TextToSQLRequest:
     question: str
     max_retries: int = 3
+    client_tz_info: dict | None = None
 
 
 @dataclass
@@ -46,7 +47,12 @@ class TextToSQLUseCase:
         self._prompt = PromptBuilder.build()
 
     def execute(self, request: TextToSQLRequest) -> TextToSQLResponse:
-        system_prompt = self._prompt.as_system_prompt()
+        if request.client_tz_info:
+            prompt = PromptBuilder.build(request.client_tz_info)
+            system_prompt = prompt.as_system_prompt()
+            logger.info("[TimeSync] Prompt rebuilt with client timezone context")
+        else:
+            system_prompt = self._prompt.as_system_prompt()
         attempts = 0
         last_error = ""
         question = self._enrich_question(request.question)
@@ -105,7 +111,12 @@ class TextToSQLUseCase:
         )
 
     def execute_streaming(self, request: TextToSQLRequest) -> TextToSQLStreamResult:
-        system_prompt = self._prompt.as_system_prompt()
+        if request.client_tz_info:
+            prompt = PromptBuilder.build(request.client_tz_info)
+            system_prompt = prompt.as_system_prompt()
+            logger.info("[TimeSync] Stream prompt rebuilt with client timezone context")
+        else:
+            system_prompt = self._prompt.as_system_prompt()
         attempts = 0
         last_error = ""
         logger.info(f"Stream query received: {request.question}")

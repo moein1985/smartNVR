@@ -1,5 +1,6 @@
 import json
 import logging
+import datetime
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 
@@ -49,8 +50,18 @@ class APIController:
 
     async def query(self, request: QueryRequest) -> QueryResponse:
         logger.info(f"POST /query - question: {request.question}")
+        client_tz_info = None
+        if request.client_offset_minutes is not None or request.client_timestamp is not None:
+            client_tz_info = {
+                "timezone": request.client_timezone,
+                "offset_minutes": request.client_offset_minutes,
+                "timestamp": request.client_timestamp,
+            }
+            logger.info(f"POST /query - client TZ info: offset={request.client_offset_minutes}min, tz={request.client_timezone}")
         req = TextToSQLRequest(
-            question=request.question, max_retries=request.max_retries
+            question=request.question,
+            max_retries=request.max_retries,
+            client_tz_info=client_tz_info,
         )
         response = self._use_case.execute(req)
         logger.info(f"POST /query - completed: {response.attempts} attempts, {response.result.row_count} rows")
@@ -58,8 +69,17 @@ class APIController:
 
     async def query_stream(self, request: QueryRequest) -> StreamingResponse:
         logger.info(f"POST /query/stream - question: {request.question}")
+        client_tz_info = None
+        if request.client_offset_minutes is not None or request.client_timestamp is not None:
+            client_tz_info = {
+                "timezone": request.client_timezone,
+                "offset_minutes": request.client_offset_minutes,
+                "timestamp": request.client_timestamp,
+            }
         req = TextToSQLRequest(
-            question=request.question, max_retries=request.max_retries
+            question=request.question,
+            max_retries=request.max_retries,
+            client_tz_info=client_tz_info,
         )
         result = self._use_case.execute_streaming(req)
         logger.info(f"POST /query/stream - SQL: {result.sql}, attempts: {result.attempts}, rows: {result.result.row_count}")
@@ -91,8 +111,14 @@ class APIController:
         )
 
     async def health(self) -> HealthResponse:
+        now = datetime.datetime.now(datetime.timezone.utc)
         return HealthResponse(
-            status="ok", version="0.1.0", db_connected=True
+            status="ok",
+            version="0.1.0",
+            db_connected=True,
+            server_timestamp=now.timestamp(),
+            server_timezone="UTC",
+            server_datetime_iso=now.isoformat(),
         )
 
     async def get_settings(self) -> SettingsModel:
