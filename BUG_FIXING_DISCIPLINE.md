@@ -300,6 +300,7 @@ Log every bug discovered and fixed in this table. Append new rows at the bottom.
 |----|------|-------------|------------|-----|-----------------|--------|
 | — | — | — | — | — | — | — |
 | FEAT-011 | 2026-07-21 | LLM cannot query recognized person names; EventItem API lacks sub_label | `frigate_schema.py` missing sub_label rules; `api_models.py` missing sub_label field | Added 5 sample queries + 5 SQL rules for sub_label disambiguation; added sub_label to EventItem | `test_api_models_sub_label.py`, `test_frigate_schema_sub_label.py` | Verified |
+| BUG-016 | 2026-07-21 | CompreFace UI returns 502 Bad Gateway; compreface-core in crash loop | Java 11 NullPointerException in CgroupV2Subsystem due to modern Linux cgroups v2; also external DB volume mount overwrote internal PostgreSQL pre-built data | Added `ADMIN_JAVA_OPTS=-XX:-UseContainerSupport` and `API_JAVA_OPTS=-XX:-UseContainerSupport` to compreface-core environment; removed external compreface-db volume mount so CompreFace uses its internal PostgreSQL | Manual verification of container logs and UI accessibility | Verified |
 
 ### Status Values
 

@@ -51,29 +51,17 @@ services:
     restart: unless-stopped
     ports:
       - "8000:80"
-    volumes:
-      - compreface-db:/var/lib/postgresql/data
     environment:
-      - POSTGRES_URL=jdbc:postgresql://compreface-db:5432/frigate
       - SPRING_PROFILES_ACTIVE=api
       - API_IMG_LENGTH_LIMIT=640
       - CONNECTOR_TIMEOUT=10000
       - ML_PORT=3000
       - UWSGI_PROCESSES=2
       - UWSGI_THREADS=1
+      - ADMIN_JAVA_OPTS=-XX:-UseContainerSupport
+      - API_JAVA_OPTS=-XX:-UseContainerSupport
     depends_on:
-      - compreface-db
-    networks:
-      - frigate_net
-
-  compreface-db:
-    container_name: compreface-db
-    image: exadel/compreface-postgres-db:1.1.0
-    restart: unless-stopped
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=frigate
+      - mosquitto
     networks:
       - frigate_net
 
@@ -85,6 +73,7 @@ services:
       - "3001:3000"
     volumes:
       - /opt/double-take:/double-take/data
+      - /opt/double-take/.storage:/.storage
     depends_on:
       - mosquitto
       - compreface-core
@@ -94,6 +83,3 @@ services:
 networks:
   frigate_net:
     driver: bridge
-
-volumes:
-  compreface-db:

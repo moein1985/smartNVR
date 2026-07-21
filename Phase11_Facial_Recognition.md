@@ -391,28 +391,28 @@ Expected: 5 containers running (frigate, mosquitto, compreface-core, compreface-
 
 ## Step 7: Configure CompreFace — Create Application & API Key
 
-- [ ] 7.1 Access CompreFace UI
+- [x] 7.1 Access CompreFace UI
 
 Open browser: `http://192.168.85.203:8000`
 
-- [ ] 7.2 Register admin account
+- [x] 7.2 Register admin account
 
 - Click "Sign up"
 - Enter email and password (local to CompreFace)
 - Log in
 
-- [ ] 7.3 Create a new application
+- [x] 7.3 Create a new application
 
 - Click "Create New Application"
 - Name: `frigate-facial-recognition`
 - Application type: **Recognition**
 
-- [ ] 7.4 Copy the API key
+- [x] 7.4 Copy the API key
 
 - After creating the application, copy the API key (UUID format)
 - This key will be used in DoubleTake's `config.yml`
 
-- [ ] 7.5 Register test subjects
+- [x] 7.5 Register test subjects
 
 - Navigate to the "Subjects" tab
 - Click "Add Subject" → Name: `soleymani` (lowercase, no spaces)
@@ -425,7 +425,7 @@ Open browser: `http://192.168.85.203:8000`
 
 ## Step 8: Update DoubleTake with CompreFace API Key
 
-- [ ] 8.1 Edit DoubleTake config
+- [x] 8.1 Edit DoubleTake config
 
 ```bash
 sudo nano /opt/double-take/config.yml
@@ -433,14 +433,14 @@ sudo nano /opt/double-take/config.yml
 
 Replace `REPLACE_WITH_COMPREFACE_API_KEY` with the actual API key from Step 7.4.
 
-- [ ] 8.2 Restart DoubleTake
+- [x] 8.2 Restart DoubleTake
 
 ```bash
 cd /opt/frigate
 sudo docker compose restart double-take
 ```
 
-- [ ] 8.3 Verify DoubleTake connected to MQTT
+- [x] 8.3 Verify DoubleTake connected to MQTT
 
 ```bash
 sudo docker logs double-take 2>&1 | grep -i mqtt
@@ -452,11 +452,11 @@ Expected: `MQTT: connected` and `MQTT: subscribed to frigate/events`
 
 ## Step 9: Verify End-to-End Pipeline (Server-Side)
 
-- [ ] 9.1 Trigger a person detection
+- [ ] 9.1 Trigger a person detection (awaiting user physical test)
 
 Walk in front of camera `cam1` (`192.168.85.112`). Wait for Frigate to detect `person`.
 
-- [ ] 9.2 Check Frigate published MQTT event
+- [ ] 9.2 Check Frigate published MQTT event (awaiting user physical test)
 
 ```bash
 sudo docker exec mosquitto mosquitto_sub -t "frigate/events" -C 1
@@ -464,7 +464,7 @@ sudo docker exec mosquitto mosquitto_sub -t "frigate/events" -C 1
 
 Should show JSON with `"label": "person"`.
 
-- [ ] 9.3 Check DoubleTake processed the event
+- [ ] 9.3 Check DoubleTake processed the event (awaiting user physical test)
 
 ```bash
 sudo docker logs double-take 2>&1 | tail -30
