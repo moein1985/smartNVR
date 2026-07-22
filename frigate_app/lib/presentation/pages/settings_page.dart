@@ -6,6 +6,7 @@ import '../../data/datasources/api_client.dart';
 import '../providers/server_config_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/system_maintenance_provider.dart';
+import 'orchestrator_page.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -343,6 +344,22 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 icon: Icons.build,
                 title: 'نگهداری سیستم',
                 subtitle: 'مشاهده لاگ‌های سیستم و به‌روزرسانی OTA',
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const OrchestratorPage(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.memory),
+                  label: const Text('مدیریت سخت‌افزار و منابع'),
+                ),
               ),
               const SizedBox(height: 28),
               _SystemMaintenanceSection(),

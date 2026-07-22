@@ -23,6 +23,11 @@ abstract class BaseApiClient {
       Map<String, dynamic> newSettings);
   Future<String> getSystemLogs(int lines);
   Future<Map<String, dynamic>> uploadUpdate(File file);
+  Future<Map<String, dynamic>> getHardware();
+  Future<Map<String, dynamic>> getContainers({bool allStatuses});
+  Future<Map<String, dynamic>> assignResources(Map<String, dynamic> payload);
+  Future<Map<String, dynamic>> getFrigateConfig();
+  Future<Map<String, dynamic>> updateFrigateConfig(Map<String, dynamic> payload);
 }
 
 class ApiClient implements BaseApiClient {
@@ -142,6 +147,39 @@ class ApiClient implements BaseApiClient {
         receiveTimeout: const Duration(minutes: 5),
       ),
     );
+    return response.data as Map<String, dynamic>;
+  }
+
+  @override
+  Future<Map<String, dynamic>> getHardware() async {
+    final response = await _dio.get('/api/v1/system/hardware');
+    return response.data as Map<String, dynamic>;
+  }
+
+  @override
+  Future<Map<String, dynamic>> getContainers({bool allStatuses = false}) async {
+    final response = await _dio.get(
+      '/api/v1/system/containers',
+      queryParameters: {'all_statuses': allStatuses},
+    );
+    return response.data as Map<String, dynamic>;
+  }
+
+  @override
+  Future<Map<String, dynamic>> assignResources(Map<String, dynamic> payload) async {
+    final response = await _dio.post('/api/v1/system/assign', data: payload);
+    return response.data as Map<String, dynamic>;
+  }
+
+  @override
+  Future<Map<String, dynamic>> getFrigateConfig() async {
+    final response = await _dio.get('/api/v1/system/frigate-config');
+    return response.data as Map<String, dynamic>;
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateFrigateConfig(Map<String, dynamic> payload) async {
+    final response = await _dio.put('/api/v1/system/frigate-config', data: payload);
     return response.data as Map<String, dynamic>;
   }
 }

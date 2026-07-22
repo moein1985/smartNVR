@@ -141,4 +141,39 @@ def create_system_router() -> APIRouter:
             logger.error(f"Failed to write override file: {e}", exc_info=True)
             raise HTTPException(status_code=500, detail=f"Failed to write override: {e}") from e
 
+    @router.get("/frigate-config")
+    async def get_frigate_config():
+        """Return the parsed frigate.yml as JSON."""
+        from frigate_intelligence.infrastructure.config.frigate_config_service import (
+            FrigateConfigService,
+        )
+
+        try:
+            service = FrigateConfigService()
+            config = service.read()
+            return {"config": config}
+        except FileNotFoundError:
+            return {"config": {}, "message": "Frigate config file not found"}
+        except Exception as e:
+            logger.error(f"Failed to read frigate config: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=f"Failed to read frigate config: {e}") from e
+
+    @router.put("/frigate-config")
+    async def update_frigate_config(payload: dict = Body(...)):
+        """Accept partial JSON to update the frigate.yml file."""
+        from frigate_intelligence.infrastructure.config.frigate_config_service import (
+            FrigateConfigService,
+        )
+
+        if not payload:
+            raise HTTPException(status_code=400, detail="Empty payload")
+
+        try:
+            service = FrigateConfigService()
+            merged = service.update(payload)
+            return {"status": "ok", "message": "Frigate config updated", "config": merged}
+        except Exception as e:
+            logger.error(f"Failed to update frigate config: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=f"Failed to update frigate config: {e}") from e
+
     return router

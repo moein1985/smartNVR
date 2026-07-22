@@ -29,10 +29,12 @@
 - [x] Step 3: Create `infrastructure/orchestrator/container_manager.py`
 - [x] Step 4: Create `infrastructure/orchestrator/compose_override.py`
 - [x] Step 5: Add system routes to `fastapi_app.py`
-- [ ] Step 6: Add Frigate config update integration
-- [ ] Step 7: Add Docker socket proxy for security
-- [ ] Step 8: Add hardware/container widgets to web panel
-- [ ] Step 9: Tests: hardware discovery mock, compose override generation
+- [x] Step 6: Add Frigate config update integration
+- [x] Step 7: Add Docker socket proxy for security
+- [x] Step 8: Add hardware/container widgets to web panel
+- [x] Step 9: Tests: hardware discovery mock, compose override generation
+
+**✅ Sub-Phase 15.2 COMPLETE — Backend Orchestrator (Hardware Discovery, Container Management, Flutter Orchestrator UI)**
 
 ---
 

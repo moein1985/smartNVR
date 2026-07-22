@@ -180,4 +180,88 @@ class MockApiClient implements BaseApiClient {
       },
     };
   }
+
+  @override
+  Future<Map<String, dynamic>> getHardware() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return {
+      'cpu': {'cores': 8, 'utilization_pct': 35.5},
+      'memory': {
+        'total_gb': 16.0,
+        'available_gb': 8.5,
+        'used_pct': 46.9,
+      },
+      'gpus': [
+        {
+          'index': 0,
+          'name': 'NVIDIA GeForce RTX 4090',
+          'memory_total_mb': 24564,
+          'memory_used_mb': 2048,
+          'gpu_utilization_pct': 22.0,
+          'uuid': 'GPU-mock-abc-123',
+        },
+      ],
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> getContainers({bool allStatuses = false}) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return {
+      'containers': [
+        {
+          'name': 'frigate-intelligence',
+          'image': 'frigate-intelligence:latest',
+          'status': 'running',
+          'short_id': 'abc123',
+          'ports': [
+            {'container_port': '8000/tcp', 'host_ip': '0.0.0.0', 'host_port': '8088'},
+          ],
+        },
+        {
+          'name': 'frigate',
+          'image': 'blakeblackshear/frigate:0.14',
+          'status': 'running',
+          'short_id': 'def456',
+          'ports': [
+            {'container_port': '5000/tcp', 'host_ip': '0.0.0.0', 'host_port': '5000'},
+            {'container_port': '8554/tcp', 'host_ip': '0.0.0.0', 'host_port': '8554'},
+          ],
+        },
+      ],
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> assignResources(Map<String, dynamic> payload) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return {
+      'status': 'ok',
+      'message': 'Override file written (mock)',
+      'path': 'docker-compose.override.yml',
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> getFrigateConfig() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return {
+      'config': {
+        'mqtt': {'host': 'localhost', 'port': 1883},
+        'cameras': {
+          'cam1': {'enabled': true, 'detect': {'width': 640, 'height': 480}},
+        },
+      },
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateFrigateConfig(Map<String, dynamic> payload) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return {
+      'status': 'ok',
+      'message': 'Frigate config updated (mock)',
+      'config': payload,
+    };
+  }
 }

@@ -92,6 +92,29 @@ class _MaintenanceMockClient implements BaseApiClient {
 
   @override
   Future<Map<String, dynamic>> uploadUpdate(File file) async => updateResponse;
+
+  @override
+  Future<Map<String, dynamic>> getHardware() async => {
+    'cpu': {'cores': 4, 'utilization_pct': 10.0},
+    'memory': {'total_gb': 8.0, 'available_gb': 4.0, 'used_pct': 50.0},
+    'gpus': <Map<String, dynamic>>[],
+  };
+
+  @override
+  Future<Map<String, dynamic>> getContainers({bool allStatuses = false}) async =>
+      {'containers': <Map<String, dynamic>>[]};
+
+  @override
+  Future<Map<String, dynamic>> assignResources(Map<String, dynamic> payload) async =>
+      {'status': 'ok', 'message': 'Override written (mock)'};
+
+  @override
+  Future<Map<String, dynamic>> getFrigateConfig() async =>
+      {'config': <String, dynamic>{}};
+
+  @override
+  Future<Map<String, dynamic>> updateFrigateConfig(Map<String, dynamic> payload) async =>
+      {'status': 'ok', 'message': 'Config updated (mock)', 'config': payload};
 }
 
 void main() {
