@@ -53,10 +53,27 @@
 
 ## Sub-Phase 15.4: Air-Gapped Installer & Hardware Locking (3–4 days)
 
-- [ ] Step 1: Create `license_generator.py` (MAC + SHA-256)
-- [ ] Step 2: Create `install.sh` with prerequisite detection
-- [ ] Step 3: Package offline Docker/NVIDIA RPMs
-- [ ] Step 4: Create Makeself `.run` archive builder script
-- [ ] Step 5: Test full air-gapped install on clean server
-- [ ] Step 6: Test hardware lock bypass scenarios
-- [ ] Step 7: Documentation: customer deployment guide
+- [x] Step 1: Create `license_generator.py` (MAC + SHA-256)
+- [x] Step 2: Create `install.sh` with prerequisite detection
+- [x] Step 3: Package offline Docker/NVIDIA RPMs
+- [x] Step 4: Create Makeself `.run` archive builder script
+- [x] Step 5: Test full air-gapped install on clean server
+- [x] Step 6: Test hardware lock bypass scenarios
+- [x] Step 7: Documentation: customer deployment guide
+
+**✅ Sub-Phase 15.4 COMPLETE — Air-Gapped Installer & Hardware Locking**
+
+---
+
+## 🎉 PHASE 15 (COMMERCIALIZATION) — 100% COMPLETE 🎉
+
+All four sub-phases of Phase 15 have been successfully implemented:
+
+- **15.1** — Logging & OTA Update Pipeline ✅
+- **15.2** — Backend Orchestrator (Hardware Discovery, Container Management, Flutter UI) ✅
+- **15.3** — IP Protection & Obfuscation (PyArmor/compileall, Multi-stage Dockerfile, Flutter obfuscation) ✅
+- **15.4** — Air-Gapped Installer & Hardware Locking (SHA-256 license, One-click install, Makeself .run) ✅
+
+The Frigate Intelligence platform is now a fully commercializable, enterprise-grade
+edge appliance with hardware locking, IP protection, air-gapped deployment,
+and OTA update capabilities.
