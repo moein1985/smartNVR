@@ -1,22 +1,22 @@
 # Phase 13 Roadmap — Industrial Business Intelligence & HR Monitoring
 
-**Status:** Approved — Not Yet Started  
+**Status:** Phase 13.1 Complete — Phase 13.2 Next
 **Proposal:** `Phase13_Technical_Feasibility_Proposal.md`
 
 ---
 
 ## Phase 13.1 — LLM Prompt Update (Backend)
 
-- [ ] **Step 1:** Update `frigate_schema.py` — add rules 14-16 to `SQL_RULES` about zone naming conventions (`_table` = workstation, `_sensitive` = restricted, zone + sub_label synergy)
-- [ ] **Step 2:** Update `frigate_schema.py` — add 4 new sample queries for `_table` and `_sensitive` zones to `SAMPLE_QUERIES`
-- [ ] **Step 3:** Update `frigate_schema.py` — update `load_schema_context()` fallback text to mention zone conventions
-- [ ] **Step 4:** Update `frigate_schema.py` — modify `get_frigate_zones()` to annotate zones with type (`workstation` / `restricted`)
-- [ ] **Step 5:** Fix `get_frigate_zones()` hardcoded URL — change from `http://frigate:5000` to `http://192.168.85.203:5000` (same fix as BUG-022)
-- [ ] **Step 6:** Add `test_bug_030_zone_convention_table_query` — verify LLM generates correct SQL for "who was at soleymani's desk"
-- [ ] **Step 7:** Add `test_bug_030_zone_convention_sensitive_query` — verify LLM generates correct SQL for "security alerts in sensitive zones"
-- [ ] **Step 8:** Run `ruff check src/ tests/` — 0 errors
-- [ ] **Step 9:** Run `python -m pytest tests/ -v` — all pass
-- [ ] **Step 10:** Update `Phase13_Roadmap.md` and `BUG_FIXING_DISCIPLINE.md` — BUG-030 Fixed
+- [x] **Step 1:** Update `frigate_schema.py` — add rules 14-16 to `SQL_RULES` about zone naming conventions (`_table` = workstation, `_sensitive` = restricted, zone + sub_label synergy)
+- [x] **Step 2:** Update `frigate_schema.py` — add 4 new sample queries for `_table` and `_sensitive` zones to `SAMPLE_QUERIES`
+- [x] **Step 3:** Update `frigate_schema.py` — update `load_schema_context()` fallback text to mention zone conventions
+- [x] **Step 4:** Update `frigate_schema.py` — modify `get_frigate_zones()` to annotate zones with type (`workstation` / `restricted`)
+- [x] **Step 5:** Fix `get_frigate_zones()` hardcoded URL — change from `http://frigate:5000` to `http://192.168.85.203:5000` (same fix as BUG-022)
+- [x] **Step 6:** Add `test_bug_030_zone_convention_table_query` — verify LLM generates correct SQL for "who was at soleymani's desk"
+- [x] **Step 7:** Add `test_bug_030_zone_convention_sensitive_query` — verify LLM generates correct SQL for "security alerts in sensitive zones"
+- [x] **Step 8:** Run `ruff check src/ tests/` — **0 errors**
+- [x] **Step 9:** Run `python -m pytest tests/ -v` — **58 passed, 0 failed** (48 baseline + 10 new)
+- [x] **Step 10:** Update `Phase13_Roadmap.md` and `BUG_FIXING_DISCIPLINE.md` — BUG-030 Fixed
 
 ---
 
@@ -77,6 +77,6 @@
 
 | Bug ID | Phase | Description | Status |
 |--------|-------|-------------|--------|
-| BUG-030 | 13.1 | LLM lacks context for `_table` and `_sensitive` Frigate zone naming conventions | Open |
+| BUG-030 | 13.1 | LLM lacks context for `_table` and `_sensitive` Frigate zone naming conventions | Fixed |
 | BUG-031 | 13.2 | Backend CronService scheduler is not integrated with FastAPI lifespan and Telegram reporting logic is unimplemented | Open |
 | BUG-032 | 13.3 | Flutter frontend lacks UI settings for Telegram Bot configuration and reporting schedules | Open |

@@ -22,11 +22,13 @@ Time format: Unix timestamps (float, seconds since epoch)
 Camera: cam1
 Labels: person, car, motorcycle, bicycle, dog, cat
 Sub-labels: recognized person names (e.g., 'moein'), 'unknown', or NULL
-Zones: configured via Frigate UI (e.g., parking_1, main_gate)"""
+Zones: configured via Frigate UI. Zone naming convention:
+- [name]_table: employee workstation (e.g., soleymani_table)
+- [name]_sensitive: secure/restricted area (e.g., warehouse_sensitive)"""
 
 
-def get_frigate_zones(frigate_url: str = "http://frigate:5000") -> str:
-    """Fetch zone names from Frigate API for LLM context."""
+def get_frigate_zones(frigate_url: str = "http://192.168.85.203:5000") -> str:
+    """Fetch zone names from Frigate API for LLM context, annotated with type."""
     try:
         config = json.loads(
             urllib.request.urlopen(f"{frigate_url}/api/config", timeout=5).read()
@@ -34,7 +36,12 @@ def get_frigate_zones(frigate_url: str = "http://frigate:5000") -> str:
         zones = []
         for cam_name, cam in config.get("cameras", {}).items():
             for zone_name in cam.get("zones", {}):
-                zones.append(f"{zone_name} (camera: {cam_name})")
+                if zone_name.endswith("_table"):
+                    zones.append(f"{zone_name} (camera: {cam_name}, type: workstation)")
+                elif zone_name.endswith("_sensitive"):
+                    zones.append(f"{zone_name} (camera: {cam_name}, type: restricted)")
+                else:
+                    zones.append(f"{zone_name} (camera: {cam_name})")
         if zones:
             return "Available zones: " + ", ".join(zones)
     except Exception as e:
@@ -126,7 +133,45 @@ SELECT id, camera, datetime(start_time, 'unixepoch', 'localtime') as start_time
 FROM event
 WHERE label='person' AND sub_label='unknown'
   AND start_time >= strftime('%s', 'now', '-1 day')
-ORDER BY start_time DESC LIMIT 50;"""
+ORDER BY start_time DESC LIMIT 50;
+
+-- Who was at Soleymani's desk today (excluding Soleymani)?
+SELECT id, sub_label, datetime(start_time, 'unixepoch', 'localtime') as start_time,
+       datetime(end_time, 'unixepoch', 'localtime') as end_time
+FROM event
+WHERE zones LIKE '%soleymani_table%' AND label='person'
+  AND sub_label NOT LIKE '%soleymani%'
+  AND start_time >= strftime('%s', 'now', 'start of day')
+ORDER BY start_time DESC;
+
+-- Soleymani's work hours today (first seen, last seen, total duration)
+SELECT sub_label,
+       datetime(MIN(start_time), 'unixepoch', 'localtime') as first_seen,
+       datetime(MAX(end_time), 'unixepoch', 'localtime') as last_seen,
+       ROUND(SUM(end_time - start_time) / 60, 1) as total_minutes
+FROM event
+WHERE zones LIKE '%soleymani_table%' AND sub_label LIKE '%soleymani%'
+  AND start_time >= strftime('%s', 'now', 'start of day')
+GROUP BY sub_label;
+
+-- Security alerts for sensitive zones today
+SELECT id, camera, zones, sub_label,
+       datetime(start_time, 'unixepoch', 'localtime') as start_time
+FROM event
+WHERE zones LIKE '%_sensitive%' AND label='person'
+  AND start_time >= strftime('%s', 'now', 'start of day')
+ORDER BY start_time DESC;
+
+-- Daily summary: all _table zone activity grouped by person
+SELECT sub_label, zones,
+       datetime(MIN(start_time), 'unixepoch', 'localtime') as first_seen,
+       datetime(MAX(end_time), 'unixepoch', 'localtime') as last_seen,
+       COUNT(*) as event_count
+FROM event
+WHERE zones LIKE '%_table%' AND label='person' AND sub_label IS NOT NULL
+  AND start_time >= strftime('%s', 'now', 'start of day')
+GROUP BY sub_label, zones
+ORDER BY zones, first_seen;"""
 
 
 SQL_RULES = """1. Generate ONLY SELECT queries. No INSERT, UPDATE, DELETE, DROP, ALTER, or ATTACH.
@@ -141,4 +186,7 @@ SQL_RULES = """1. Generate ONLY SELECT queries. No INSERT, UPDATE, DELETE, DROP,
 10. The `zones` column is a JSON array. Use LIKE '%zone_name%' for simple filtering or EXISTS (SELECT 1 FROM json_each(zones) WHERE value='zone_name') for precise matching.
 11. Detection labels: person, car, motorcycle, bicycle, dog, cat. Zones: parking_1, main_gate.
 12. The `recordings` table has path, start_time, end_time, duration for 10-second MP4 segments at /media/frigate/recordings/YYYY-MM-DD/HH/<camera>/MM.SS.mp4.
-13. The `sub_label` column stores recognized person names (e.g., 'moein', 'ahmad'), 'unknown' for unrecognized faces, comma-separated for multiple faces, or NULL. When a user asks about a person by name, filter with sub_label LIKE '%name%' alongside label='person'. Never use label='person_name'. For "who was seen", query DISTINCT sub_label WHERE sub_label IS NOT NULL."""
+13. The `sub_label` column stores recognized person names (e.g., 'moein', 'ahmad'), 'unknown' for unrecognized faces, comma-separated for multiple faces, or NULL. When a user asks about a person by name, filter with sub_label LIKE '%name%' alongside label='person'. Never use label='person_name'. For "who was seen", query DISTINCT sub_label WHERE sub_label IS NOT NULL.
+14. Zone Naming Convention: Zones ending with `_table` (e.g., `soleymani_table`) represent employee workstations. Zones ending with `_sensitive` (e.g., `warehouse_sensitive`) represent secure/restricted areas. When a user asks about "desk presence", "work hours", or "who was at X's desk", filter zones LIKE '%_table'. When asking about "unauthorized access", "security alerts", or "restricted areas", filter zones LIKE '%_sensitive'.
+15. Zone + sub_label Synergy: To find "who was at Soleymani's desk", combine zone and sub_label: WHERE zones LIKE '%soleymani_table%' AND sub_label NOT LIKE '%soleymani%' AND label='person'. This identifies anyone OTHER than Soleymani at their desk. To find Soleymani's active hours: WHERE zones LIKE '%soleymani_table%' AND sub_label LIKE '%soleymani%'.
+16. Work Hours Calculation: To calculate active desk time for an employee, query events in their `_table` zone with their `sub_label`, then compute SUM(end_time - start_time) for overlapping or consecutive events. Use MIN(start_time) as first_seen and MAX(end_time) as last_seen for daily presence summary."""
