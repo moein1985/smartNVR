@@ -25,6 +25,9 @@ from frigate_intelligence.infrastructure.api.routes.pos_routes import (
 from frigate_intelligence.infrastructure.api.routes.analytics_routes import (
     create_analytics_router,
 )
+from frigate_intelligence.infrastructure.api.routes.system_routes import (
+    create_system_router,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -91,5 +94,8 @@ def create_app(container: Container) -> FastAPI:
 
     analytics_router = create_analytics_router(container.analytics_use_case)
     app.include_router(analytics_router)
+
+    system_router = create_system_router()
+    app.include_router(system_router)
 
     return app

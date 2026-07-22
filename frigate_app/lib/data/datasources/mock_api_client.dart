@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'api_client.dart';
 
 class MockApiClient implements BaseApiClient {
@@ -152,5 +153,31 @@ class MockApiClient implements BaseApiClient {
       Map<String, dynamic> newSettings) async {
     await Future.delayed(const Duration(milliseconds: 500));
     return {'status': 'ok', 'message': 'Settings saved successfully'};
+  }
+
+  @override
+  Future<String> getSystemLogs(int lines) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return [
+      '2026-07-22 19:00:42 [frigate_intelligence] INFO: Initializing Frigate Intelligence Platform',
+      '2026-07-22 19:00:42 [frigate_intelligence.infrastructure.api.fastapi_app] INFO: GET /api/v1/health -> 200 (12.3ms) [a3f8b1c2]',
+      '2026-07-22 19:00:43 [frigate_intelligence.infrastructure.scheduler.cron_service] INFO: Scheduled report job every 24h',
+      '2026-07-22 19:01:15 [frigate_intelligence.infrastructure.api.fastapi_app] INFO: POST /api/v1/query -> 200 (1842.5ms) [b7c2e9a1]',
+      '2026-07-22 19:02:03 [frigate_intelligence.infrastructure.api.fastapi_app] INFO: GET /api/v1/system/logs -> 200 (5.1ms) [c1d4f2b8]',
+    ].join('\n');
+  }
+
+  @override
+  Future<Map<String, dynamic>> uploadUpdate(File file) async {
+    await Future.delayed(const Duration(seconds: 2));
+    return {
+      'status': 'ok',
+      'message': 'Update applied successfully (mock)',
+      'details': {
+        'old_image': 'frigate-intelligence:latest',
+        'new_image': 'frigate-intelligence:v1.2.0',
+        'health_check_passed': true,
+      },
+    };
   }
 }

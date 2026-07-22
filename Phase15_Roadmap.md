@@ -11,12 +11,14 @@
 - [x] Step 2: Replace `logging.basicConfig` in `fastapi_app.py` with `setup_logging()`
 - [x] Step 3: Add `LOG_LEVEL` to `settings.py` and `.env`
 - [x] Step 4: Add request logging middleware (correlation ID, response time)
-- [ ] Step 5: Create `infrastructure/api/routes/system_routes.py` — log viewer endpoint
-- [ ] Step 6: Create `update-agent` sidecar container with Docker socket access
-- [ ] Step 7: Implement OTA upload endpoint + background update sequence
-- [ ] Step 8: Implement rollback mechanism with health check
-- [ ] Step 9: Add "System Updates" section to Flutter settings page
-- [ ] Step 10: Tests: logging rotation, OTA upload, rollback scenario
+- [x] Step 5: Create `infrastructure/api/routes/system_routes.py` — log viewer endpoint
+- [x] Step 6: Create `update-agent` sidecar container with Docker socket access
+- [x] Step 7: Implement OTA upload endpoint + background update sequence
+- [x] Step 8: Implement rollback mechanism with health check
+- [x] Step 9: Add "System Updates" section to Flutter settings page
+- [x] Step 10: Tests: logging rotation, OTA upload, rollback scenario
+
+**✅ Sub-Phase 15.1 COMPLETE — Logging & OTA Update Pipeline**
 
 ---
 

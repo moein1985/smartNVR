@@ -5,6 +5,7 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -58,6 +59,14 @@ class _SyncedMockClient implements BaseApiClient {
   @override
   Future<Map<String, dynamic>> updateSettings(Map<String, dynamic> newSettings) async =>
       {'status': 'ok', 'message': 'Settings saved successfully'};
+
+  @override
+  Future<String> getSystemLogs(int lines) async =>
+      '2026-07-22 19:00:42 [test] INFO: Mock log line 1\n2026-07-22 19:00:43 [test] INFO: Mock log line 2';
+
+  @override
+  Future<Map<String, dynamic>> uploadUpdate(File file) async =>
+      {'status': 'ok', 'message': 'Update applied (mock)'};
 }
 
 void main() {

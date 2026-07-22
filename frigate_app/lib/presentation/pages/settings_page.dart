@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../core/config/app_config.dart';
 import '../../data/datasources/api_client.dart';
 import '../providers/server_config_provider.dart';
 import '../providers/settings_provider.dart';
+import '../providers/system_maintenance_provider.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -336,6 +338,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   label: const Text('ذخیره تنظیمات تلگرام'),
                 ),
               ),
+              const SizedBox(height: 40),
+              const _SectionHeader(
+                icon: Icons.build,
+                title: 'نگهداری سیستم',
+                subtitle: 'مشاهده لاگ‌های سیستم و به‌روزرسانی OTA',
+              ),
+              const SizedBox(height: 28),
+              _SystemMaintenanceSection(),
             ],
           ),
         ),
@@ -403,6 +413,138 @@ class _StatusIndicator extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _SystemMaintenanceSection extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final maintenanceState = ref.watch(systemMaintenanceProvider);
+
+    ref.listen<SystemMaintenanceState>(systemMaintenanceProvider, (previous, next) {
+      if (next.updateState == UpdateState.success && next.message != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.message!),
+            backgroundColor: Colors.green,
+          ),
+        );
+        ref.read(systemMaintenanceProvider.notifier).reset();
+      } else if (next.updateState == UpdateState.rolledBack &&
+          next.message != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.message!),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        ref.read(systemMaintenanceProvider.notifier).reset();
+      } else if (next.updateState == UpdateState.failed &&
+          next.message != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.message!),
+            backgroundColor: Colors.red,
+          ),
+        );
+        ref.read(systemMaintenanceProvider.notifier).reset();
+      }
+    });
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.terminal, size: 20),
+            const SizedBox(width: 8),
+            Text('لاگ‌های سیستم',
+                style: Theme.of(context).textTheme.labelLarge),
+            const Spacer(),
+            TextButton.icon(
+              onPressed: maintenanceState.isLoadingLogs
+                  ? null
+                  : () =>
+                      ref.read(systemMaintenanceProvider.notifier).fetchLogs(),
+              icon: maintenanceState.isLoadingLogs
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.refresh, size: 18),
+              label: const Text('بازنشانی'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          width: double.infinity,
+          height: 200,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E1E1E),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.shade700),
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.vertical,
+            child: SelectableText(
+              maintenanceState.logs ??
+                  'برای مشاهده لاگ‌ها روی «بازنشانی» بزنید',
+              style: const TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 11,
+                color: Color(0xFFD4D4D4),
+                height: 1.4,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 28),
+        Text('به‌روزرسانی OTA',
+            style: Theme.of(context).textTheme.labelLarge),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: FilledButton.icon(
+            onPressed: maintenanceState.updateState == UpdateState.uploading
+                ? null
+                : () => _pickAndUpdateFile(context, ref),
+            icon: maintenanceState.updateState == UpdateState.uploading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.system_update),
+            label: Text(
+              maintenanceState.updateState == UpdateState.uploading
+                  ? 'در حال به‌روزرسانی...'
+                  : 'انتخاب فایل به‌روزرسانی (.tar)',
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _pickAndUpdateFile(
+      BuildContext context, WidgetRef ref) async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['tar'],
+    );
+    if (result != null && result.files.isNotEmpty) {
+      final filePath = result.files.first.path;
+      if (filePath != null) {
+        ref.read(systemMaintenanceProvider.notifier).uploadUpdate(filePath);
+      }
+    }
   }
 }
 

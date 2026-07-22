@@ -1,4 +1,5 @@
 // ignore_for_file: use_null_aware_elements
+import 'dart:io';
 import 'package:dio/dio.dart';
 import '../../core/config/app_config.dart';
 
@@ -20,6 +21,8 @@ abstract class BaseApiClient {
   Future<Map<String, dynamic>> getSettings();
   Future<Map<String, dynamic>> updateSettings(
       Map<String, dynamic> newSettings);
+  Future<String> getSystemLogs(int lines);
+  Future<Map<String, dynamic>> uploadUpdate(File file);
 }
 
 class ApiClient implements BaseApiClient {
@@ -112,6 +115,33 @@ class ApiClient implements BaseApiClient {
   Future<Map<String, dynamic>> updateSettings(
       Map<String, dynamic> newSettings) async {
     final response = await _dio.post('/api/v1/settings', data: newSettings);
+    return response.data as Map<String, dynamic>;
+  }
+
+  @override
+  Future<String> getSystemLogs(int lines) async {
+    final response = await _dio.get(
+      '/api/v1/system/logs',
+      queryParameters: {'lines': lines},
+    );
+    final data = response.data as Map<String, dynamic>;
+    final logLines = data['lines'] as List;
+    return logLines.cast<String>().join('\n');
+  }
+
+  @override
+  Future<Map<String, dynamic>> uploadUpdate(File file) async {
+    final formData = FormData.fromMap({
+      'file': await MultipartFile.fromFile(file.path),
+    });
+    final response = await _dio.post(
+      '/api/v1/system/update',
+      data: formData,
+      options: Options(
+        sendTimeout: const Duration(minutes: 10),
+        receiveTimeout: const Duration(minutes: 5),
+      ),
+    );
     return response.data as Map<String, dynamic>;
   }
 }

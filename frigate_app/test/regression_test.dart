@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -338,4 +340,12 @@ class _SkewableMockApiClient implements BaseApiClient {
       Map<String, dynamic> newSettings) async {
     return {'status': 'ok', 'message': 'Settings saved successfully'};
   }
+
+  @override
+  Future<String> getSystemLogs(int lines) async =>
+      '2026-07-22 19:00:42 [test] INFO: Mock log line';
+
+  @override
+  Future<Map<String, dynamic>> uploadUpdate(File file) async =>
+      {'status': 'ok', 'message': 'Update applied (mock)'};
 }
