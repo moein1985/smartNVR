@@ -17,6 +17,9 @@ abstract class BaseApiClient {
     double? startTime,
     double? endTime,
   });
+  Future<Map<String, dynamic>> getSettings();
+  Future<Map<String, dynamic>> updateSettings(
+      Map<String, dynamic> newSettings);
 }
 
 class ApiClient implements BaseApiClient {
@@ -96,6 +99,19 @@ class ApiClient implements BaseApiClient {
       if (endTime != null) 'end_time': endTime,
     };
     final response = await _dio.get('/api/v1/recordings', queryParameters: params);
+    return response.data as Map<String, dynamic>;
+  }
+
+  @override
+  Future<Map<String, dynamic>> getSettings() async {
+    final response = await _dio.get('/api/v1/settings');
+    return response.data as Map<String, dynamic>;
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateSettings(
+      Map<String, dynamic> newSettings) async {
+    final response = await _dio.post('/api/v1/settings', data: newSettings);
     return response.data as Map<String, dynamic>;
   }
 }

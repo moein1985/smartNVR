@@ -38,6 +38,26 @@ class _SyncedMockClient implements BaseApiClient {
   @override
   Future<Map<String, dynamic>> getRecordings({String? camera, String? date, int? hour, double? startTime, double? endTime}) async =>
       {'segments': [], 'total': 0, 'camera': camera ?? 'all'};
+
+  @override
+  Future<Map<String, dynamic>> getSettings() async => {
+    'avalai_api_key': '',
+    'llm_model': 'gemini-2.5-flash',
+    'telegram_enabled': false,
+    'telegram_bot_token': '',
+    'telegram_chat_id': '',
+    'bale_enabled': false,
+    'bale_bot_token': '',
+    'bale_chat_id': '',
+    'report_frequency': 'disabled',
+    'report_target': 'telegram',
+    'report_time': '21:00',
+    'report_timezone': 'Asia/Tehran',
+  };
+
+  @override
+  Future<Map<String, dynamic>> updateSettings(Map<String, dynamic> newSettings) async =>
+      {'status': 'ok', 'message': 'Settings saved successfully'};
 }
 
 void main() {

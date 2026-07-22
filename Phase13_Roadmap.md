@@ -1,6 +1,6 @@
 # Phase 13 Roadmap — Industrial Business Intelligence & HR Monitoring
 
-**Status:** Phase 13.2 Complete — Phase 13.3 Next
+**Status:** Phase 13.3 Complete — Phase 13.4 Next
 **Proposal:** `Phase13_Technical_Feasibility_Proposal.md`
 
 ---
@@ -43,19 +43,19 @@
 
 ## Phase 13.3 — Flutter Settings UI (Frontend)
 
-- [ ] **Step 1:** Update `api_client.dart` — add `getSettings()` and `updateSettings()` methods
-- [ ] **Step 2:** Create `lib/presentation/providers/settings_provider.dart` — `SettingsNotifier` wrapping API calls
-- [ ] **Step 3:** Update `settings_page.dart` — add new `_SectionHeader` for "Telegram & Reporting" section
-- [ ] **Step 4:** Add Telegram Bot Token text field (obscured)
-- [ ] **Step 5:** Add Telegram Chat ID text field
-- [ ] **Step 6:** Add Report Time picker (TimePicker or text field with HH:MM format)
-- [ ] **Step 7:** Add Report Timezone dropdown (common timezones, default Asia/Tehran)
-- [ ] **Step 8:** Add "Enable Scheduled Reports" switch (maps to `telegram_enabled` + `report_frequency != "disabled"`)
-- [ ] **Step 9:** Add "Save & Test Telegram" button — saves settings and sends a test message
-- [ ] **Step 10:** Add `bug_032_settings_page_has_telegram_section` in `regression_test.dart`
-- [ ] **Step 11:** Run `flutter analyze` — 0 issues
-- [ ] **Step 12:** Run `flutter test` — all pass
-- [ ] **Step 13:** Update `Phase13_Roadmap.md` and `BUG_FIXING_DISCIPLINE.md` — BUG-032 Fixed
+- [x] **Step 1:** Update `api_client.dart` — add `getSettings()` and `updateSettings()` methods
+- [x] **Step 2:** Create `lib/presentation/providers/settings_provider.dart` — `SettingsNotifier` wrapping API calls
+- [x] **Step 3:** Update `settings_page.dart` — add new `_SectionHeader` for "Telegram & Reporting" section
+- [x] **Step 4:** Add Telegram Bot Token text field (obscured)
+- [x] **Step 5:** Add Telegram Chat ID text field
+- [x] **Step 6:** Add Report Time picker (TimePicker or text field with HH:MM format)
+- [x] **Step 7:** Add Report Timezone dropdown (common timezones, default Asia/Tehran)
+- [x] **Step 8:** Add "Enable Scheduled Reports" switch (maps to `telegram_enabled` + `report_frequency != "disabled"`)
+- [x] **Step 9:** Add "Save & Test Telegram" button — saves settings and sends a test message
+- [x] **Step 10:** Add `bug_032_settings_page_has_telegram_section` in `regression_test.dart`
+- [x] **Step 11:** Run `flutter analyze` — **0 issues**
+- [x] **Step 12:** Run `flutter test` — **10 passed, 0 failed** (9 baseline + 1 new)
+- [x] **Step 13:** Update `Phase13_Roadmap.md` and `BUG_FIXING_DISCIPLINE.md` — BUG-032 Fixed
 
 ---
 
@@ -79,4 +79,4 @@
 |--------|-------|-------------|--------|
 | BUG-030 | 13.1 | LLM lacks context for `_table` and `_sensitive` Frigate zone naming conventions | Fixed |
 | BUG-031 | 13.2 | Backend CronService scheduler is not integrated with FastAPI lifespan and Telegram reporting logic is unimplemented | Fixed |
-| BUG-032 | 13.3 | Flutter frontend lacks UI settings for Telegram Bot configuration and reporting schedules | Open |
+| BUG-032 | 13.3 | Flutter frontend lacks UI settings for Telegram Bot configuration and reporting schedules | Fixed |

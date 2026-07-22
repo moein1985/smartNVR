@@ -9,6 +9,7 @@ import 'package:frigate_intelligence/presentation/providers/navigation_provider.
 import 'package:frigate_intelligence/presentation/models/playback_params.dart';
 import 'package:frigate_intelligence/presentation/widgets/inline_vod_player.dart';
 import 'package:frigate_intelligence/data/datasources/api_client.dart';
+import 'package:frigate_intelligence/presentation/pages/settings_page.dart';
 
 void main() {
   // Default override: synced mock API client for all tests
@@ -206,6 +207,52 @@ void main() {
           'http://192.168.85.203:5000/api/cam1/start/1784394000/end/1784395800/clip.mp4');
     });
   });
+
+  group('SettingsPage', () {
+    testWidgets('bug_032_settings_page_has_telegram_section', (tester) async {
+      // Regression test for BUG-032: Settings page should render the
+      // Telegram & Reporting section with bot token, chat ID, report time,
+      // timezone dropdown, enable switch, and save button.
+      tester.view.physicalSize = const Size(500, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            apiClientProvider.overrideWith((ref) => defaultClient),
+          ],
+          child: const MaterialApp(
+            home: SettingsPage(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Section header for Telegram & Reporting
+      expect(find.text('تلگرام و گزارش‌گیری'), findsOneWidget);
+
+      // Enable switch
+      expect(find.text('فعال‌سازی گزارش‌های زمان‌بندی شده'), findsOneWidget);
+      expect(find.byType(SwitchListTile), findsNWidgets(2));
+
+      // Bot Token field
+      expect(find.text('Telegram Bot Token'), findsOneWidget);
+
+      // Chat ID field
+      expect(find.text('Telegram Chat ID'), findsOneWidget);
+
+      // Report Time field
+      expect(find.text('ساعت گزارش (HH:MM)'), findsOneWidget);
+
+      // Timezone dropdown
+      expect(find.text('منطقه زمانی'), findsOneWidget);
+      expect(find.byType(DropdownButtonFormField<String>), findsOneWidget);
+
+      // Save button
+      expect(find.text('ذخیره تنظیمات تلگرام'), findsOneWidget);
+    });
+  });
 }
 
 class _SkewableMockApiClient implements BaseApiClient {
@@ -266,5 +313,29 @@ class _SkewableMockApiClient implements BaseApiClient {
     double? endTime,
   }) async {
     return {'segments': [], 'total': 0, 'camera': camera ?? 'all'};
+  }
+
+  @override
+  Future<Map<String, dynamic>> getSettings() async {
+    return {
+      'avalai_api_key': '',
+      'llm_model': 'gemini-2.5-flash',
+      'telegram_enabled': false,
+      'telegram_bot_token': '',
+      'telegram_chat_id': '',
+      'bale_enabled': false,
+      'bale_bot_token': '',
+      'bale_chat_id': '',
+      'report_frequency': 'disabled',
+      'report_target': 'telegram',
+      'report_time': '21:00',
+      'report_timezone': 'Asia/Tehran',
+    };
+  }
+
+  @override
+  Future<Map<String, dynamic>> updateSettings(
+      Map<String, dynamic> newSettings) async {
+    return {'status': 'ok', 'message': 'Settings saved successfully'};
   }
 }

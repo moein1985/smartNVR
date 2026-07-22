@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/config/app_config.dart';
 import '../../data/datasources/api_client.dart';
 import '../providers/server_config_provider.dart';
+import '../providers/settings_provider.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -14,15 +15,31 @@ class SettingsPage extends ConsumerStatefulWidget {
 class _SettingsPageState extends ConsumerState<SettingsPage> {
   late TextEditingController _ipController;
   late TextEditingController _portController;
+  late TextEditingController _botTokenController;
+  late TextEditingController _chatIdController;
+  late TextEditingController _reportTimeController;
   ConnectionStatus _status = ConnectionStatus.idle;
   bool _disposed = false;
   bool _isMockMode = false;
+  bool _telegramEnabled = false;
+  String _reportTimezone = 'Asia/Tehran';
+
+  static const _timezones = [
+    'Asia/Tehran',
+    'UTC',
+    'Europe/London',
+    'America/New_York',
+    'Asia/Dubai',
+  ];
 
   @override
   void initState() {
     super.initState();
     _ipController = TextEditingController();
     _portController = TextEditingController();
+    _botTokenController = TextEditingController();
+    _chatIdController = TextEditingController();
+    _reportTimeController = TextEditingController(text: '21:00');
     final configAsync = ref.read(serverConfigProvider);
     configAsync.whenData((config) {
       if (!_disposed) {
@@ -31,6 +48,61 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         _isMockMode = config.isMockMode;
       }
     });
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    try {
+      final client = ref.read(apiClientProvider);
+      final settings = await client.getSettings();
+      if (!_disposed) {
+        setState(() {
+          _telegramEnabled = settings['telegram_enabled'] as bool? ?? false;
+          _botTokenController.text =
+              settings['telegram_bot_token'] as String? ?? '';
+          _chatIdController.text =
+              settings['telegram_chat_id'] as String? ?? '';
+          _reportTimeController.text =
+              settings['report_time'] as String? ?? '21:00';
+          _reportTimezone =
+              settings['report_timezone'] as String? ?? 'Asia/Tehran';
+        });
+      }
+    } catch (_) {
+      // Settings unavailable (e.g. mock mode or server down)
+    }
+  }
+
+  Future<void> _saveTelegramSettings() async {
+    final newSettings = <String, dynamic>{
+      'telegram_enabled': _telegramEnabled,
+      'telegram_bot_token': _botTokenController.text.trim(),
+      'telegram_chat_id': _chatIdController.text.trim(),
+      'report_time': _reportTimeController.text.trim(),
+      'report_timezone': _reportTimezone,
+      'report_frequency': _telegramEnabled ? 'daily' : 'disabled',
+      'report_target': 'telegram',
+    };
+    try {
+      await ref.read(settingsProvider.notifier).updateSettings(newSettings);
+      if (!_disposed && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تنظیمات تلگرام ذخیره شد'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (_) {
+      if (!_disposed && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('خطا در ذخیره تنظیمات'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _testAndSave() async {
@@ -165,6 +237,98 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
               const SizedBox(height: 20),
               _StatusIndicator(status: _status),
+              const SizedBox(height: 40),
+              const _SectionHeader(
+                icon: Icons.send,
+                title: 'تلگرام و گزارش‌گیری',
+                subtitle: 'تنظیمات ربات تلگرام و زمان‌بندی گزارش‌های روزانه',
+              ),
+              const SizedBox(height: 28),
+              SwitchListTile(
+                title: const Text('فعال‌سازی گزارش‌های زمان‌بندی شده'),
+                subtitle: const Text('ارسال خودکار گزارش روزانه به تلگرام'),
+                secondary: const Icon(Icons.notifications_active),
+                value: _telegramEnabled,
+                onChanged: (value) {
+                  setState(() => _telegramEnabled = value);
+                },
+              ),
+              const SizedBox(height: 20),
+              Text('Telegram Bot Token',
+                  style: Theme.of(context).textTheme.labelLarge),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _botTokenController,
+                decoration: const InputDecoration(
+                  hintText: '123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.key),
+                ),
+                obscureText: true,
+                enabled: _telegramEnabled,
+              ),
+              const SizedBox(height: 20),
+              Text('Telegram Chat ID',
+                  style: Theme.of(context).textTheme.labelLarge),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _chatIdController,
+                decoration: const InputDecoration(
+                  hintText: '-1001234567890',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.chat),
+                ),
+                keyboardType: TextInputType.number,
+                enabled: _telegramEnabled,
+              ),
+              const SizedBox(height: 20),
+              Text('ساعت گزارش (HH:MM)',
+                  style: Theme.of(context).textTheme.labelLarge),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _reportTimeController,
+                decoration: const InputDecoration(
+                  hintText: '21:00',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.access_time),
+                ),
+                keyboardType: TextInputType.datetime,
+                enabled: _telegramEnabled,
+              ),
+              const SizedBox(height: 20),
+              Text('منطقه زمانی',
+                  style: Theme.of(context).textTheme.labelLarge),
+              const SizedBox(height: 8),
+              DropdownButtonFormField<String>(
+                initialValue: _reportTimezone,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.public),
+                ),
+                items: _timezones
+                    .map((tz) => DropdownMenuItem(
+                          value: tz,
+                          child: Text(tz),
+                        ))
+                    .toList(),
+                onChanged: _telegramEnabled
+                    ? (value) {
+                        if (value != null) {
+                          setState(() => _reportTimezone = value);
+                        }
+                      }
+                    : null,
+              ),
+              const SizedBox(height: 28),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: FilledButton.icon(
+                  onPressed: _telegramEnabled ? _saveTelegramSettings : null,
+                  icon: const Icon(Icons.save),
+                  label: const Text('ذخیره تنظیمات تلگرام'),
+                ),
+              ),
             ],
           ),
         ),
@@ -177,6 +341,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     _disposed = true;
     _ipController.dispose();
     _portController.dispose();
+    _botTokenController.dispose();
+    _chatIdController.dispose();
+    _reportTimeController.dispose();
     super.dispose();
   }
 }
