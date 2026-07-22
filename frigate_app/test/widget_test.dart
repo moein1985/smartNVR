@@ -52,6 +52,7 @@ class _SyncedMockClient implements BaseApiClient {
     'report_target': 'telegram',
     'report_interval_hours': 24,
     'report_timezone': 'Asia/Tehran',
+    'log_level': 'INFO',
   };
 
   @override

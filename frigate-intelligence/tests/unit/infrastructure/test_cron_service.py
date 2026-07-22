@@ -135,10 +135,11 @@ def test_bug_031_report_formats_sensitive_events():
 
 
 def test_bug_034_settings_model_has_interval_field():
-    """SettingsModel should include report_interval_hours with default 24."""
+    """SettingsModel should include report_interval_hours and log_level with defaults."""
     settings = SettingsModel()
     assert settings.report_interval_hours == 24
     assert settings.report_timezone == "Asia/Tehran"
+    assert settings.log_level == "INFO"
 
 
 def test_bug_034_settings_model_serialization():

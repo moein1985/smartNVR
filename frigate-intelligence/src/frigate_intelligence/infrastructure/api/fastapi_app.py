@@ -1,8 +1,11 @@
 import logging
-import sys
+import time
+import uuid
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from frigate_intelligence.config.dependencies import Container
 from frigate_intelligence.interface_adapters.controllers.api_controller import (
@@ -11,6 +14,7 @@ from frigate_intelligence.interface_adapters.controllers.api_controller import (
 from frigate_intelligence.infrastructure.config.settings_manager import (
     SettingsManager,
 )
+from frigate_intelligence.infrastructure.logging_config import setup_logging
 from frigate_intelligence.infrastructure.scheduler.cron_service import CronService
 from frigate_intelligence.infrastructure.api.routes.event_routes import (
     create_event_router,
@@ -22,15 +26,29 @@ from frigate_intelligence.infrastructure.api.routes.analytics_routes import (
     create_analytics_router,
 )
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
-    stream=sys.stdout,
-)
+logger = logging.getLogger(__name__)
+
+
+class RequestLoggingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        correlation_id = str(uuid.uuid4())[:8]
+        start = time.perf_counter()
+        response = await call_next(request)
+        elapsed_ms = (time.perf_counter() - start) * 1000
+        logger.info(
+            f"{request.method} {request.url.path} "
+            f"-> {response.status_code} ({elapsed_ms:.1f}ms) [{correlation_id}]"
+        )
+        response.headers["X-Correlation-ID"] = correlation_id
+        return response
 
 
 def create_app(container: Container) -> FastAPI:
     settings_manager = SettingsManager()
+    log_level = settings_manager.load().log_level
+    setup_logging(level=log_level)
+    logger.info("Initializing Frigate Intelligence Platform")
+
     cron_service = CronService(settings_manager=settings_manager, container=container)
 
     @asynccontextmanager
@@ -48,6 +66,7 @@ def create_app(container: Container) -> FastAPI:
         lifespan=lifespan,
     )
 
+    app.add_middleware(RequestLoggingMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["*"],

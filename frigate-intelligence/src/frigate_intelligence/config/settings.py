@@ -11,5 +11,6 @@ class Settings(BaseSettings):
     telegram_chat_id: str = ""
     bale_bot_token: str = ""
     bale_chat_id: str = ""
+    log_level: str = "INFO"
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}

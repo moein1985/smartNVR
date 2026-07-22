@@ -13,3 +13,4 @@ class SettingsModel(BaseModel):
     report_target: str = "telegram"
     report_interval_hours: int = 24
     report_timezone: str = "Asia/Tehran"
+    log_level: str = "INFO"
