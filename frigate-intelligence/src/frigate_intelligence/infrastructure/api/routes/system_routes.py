@@ -2,7 +2,7 @@ import logging
 from collections import deque
 from pathlib import Path
 
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Body, File, HTTPException, Query, UploadFile
 
 logger = logging.getLogger(__name__)
 
@@ -73,5 +73,72 @@ def create_system_router() -> APIRouter:
         if result.get("status") == "rolled_back":
             return {"status": "rolled_back", "message": result.get("message", "Update rolled back"), "details": result}
         return {"status": "ok", "message": "Update applied successfully", "details": result}
+
+    @router.get("/hardware")
+    async def get_hardware():
+        """Return discovered CPU, RAM, and GPU resources."""
+        from frigate_intelligence.infrastructure.orchestrator.hardware_discovery import (
+            HardwareDiscovery,
+        )
+
+        try:
+            discovery = HardwareDiscovery()
+            info = discovery.discover()
+            return info.to_dict()
+        except Exception as e:
+            logger.error(f"Hardware discovery failed: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=f"Hardware discovery failed: {e}") from e
+
+    @router.get("/containers")
+    async def get_containers(all_statuses: bool = Query(False, description="Include stopped containers")):
+        """Return list of Docker containers and their statuses."""
+        from frigate_intelligence.infrastructure.orchestrator.container_manager import (
+            ContainerManager,
+        )
+
+        try:
+            manager = ContainerManager()
+            return {"containers": manager.to_dict_list(all_statuses=all_statuses)}
+        except Exception as e:
+            logger.error(f"Container listing failed: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=f"Container listing failed: {e}") from e
+
+    @router.post("/assign")
+    async def assign_resources(payload: dict = Body(...)):
+        """Accept resource pinning payload and write docker-compose.override.yml."""
+        from frigate_intelligence.infrastructure.orchestrator.compose_override import (
+            ComposeOverrideGenerator,
+            ResourceAssignment,
+        )
+
+        assignments_data = payload.get("assignments", [])
+        if not assignments_data:
+            raise HTTPException(status_code=400, detail="No assignments provided")
+
+        assignments: list[ResourceAssignment] = []
+        for item in assignments_data:
+            service = item.get("service")
+            if not service:
+                raise HTTPException(status_code=400, detail="Each assignment requires a 'service' name")
+            assignments.append(
+                ResourceAssignment(
+                    service=service,
+                    cpuset=item.get("cpuset"),
+                    gpu_ids=item.get("gpu_ids"),
+                    memory_limit=item.get("memory_limit"),
+                )
+            )
+
+        try:
+            generator = ComposeOverrideGenerator()
+            path = generator.write(assignments)
+            return {
+                "status": "ok",
+                "message": f"Override file written to {path}",
+                "path": str(path),
+            }
+        except Exception as e:
+            logger.error(f"Failed to write override file: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=f"Failed to write override: {e}") from e
 
     return router

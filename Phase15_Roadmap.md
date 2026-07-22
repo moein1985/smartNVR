@@ -24,11 +24,11 @@
 
 ## Sub-Phase 15.2: Backend Orchestrator (4–5 days)
 
-- [ ] Step 1: Add `docker` PyPI package to `pyproject.toml`
-- [ ] Step 2: Create `infrastructure/orchestrator/hardware_discovery.py`
-- [ ] Step 3: Create `infrastructure/orchestrator/container_manager.py`
-- [ ] Step 4: Create `infrastructure/orchestrator/compose_override.py`
-- [ ] Step 5: Add system routes to `fastapi_app.py`
+- [x] Step 1: Add `docker` PyPI package to `pyproject.toml`
+- [x] Step 2: Create `infrastructure/orchestrator/hardware_discovery.py`
+- [x] Step 3: Create `infrastructure/orchestrator/container_manager.py`
+- [x] Step 4: Create `infrastructure/orchestrator/compose_override.py`
+- [x] Step 5: Add system routes to `fastapi_app.py`
 - [ ] Step 6: Add Frigate config update integration
 - [ ] Step 7: Add Docker socket proxy for security
 - [ ] Step 8: Add hardware/container widgets to web panel
