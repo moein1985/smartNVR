@@ -12,3 +12,5 @@ class SettingsModel(BaseModel):
     bale_chat_id: str = ""
     report_frequency: str = "disabled"
     report_target: str = "telegram"
+    report_time: str = "21:00"
+    report_timezone: str = "Asia/Tehran"

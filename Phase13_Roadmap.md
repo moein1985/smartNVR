@@ -1,6 +1,6 @@
 # Phase 13 Roadmap — Industrial Business Intelligence & HR Monitoring
 
-**Status:** Phase 13.1 Complete — Phase 13.2 Next
+**Status:** Phase 13.2 Complete — Phase 13.3 Next
 **Proposal:** `Phase13_Technical_Feasibility_Proposal.md`
 
 ---
@@ -22,22 +22,22 @@
 
 ## Phase 13.2 — Backend Scheduler & Telegram Report (Backend)
 
-- [ ] **Step 1:** Update `settings_model.py` — add `report_time: str = "21:00"` and `report_timezone: str = "Asia/Tehran"` fields
-- [ ] **Step 2:** Update `cron_service.py` — replace `_FREQUENCY_CRON_MAP` with dynamic cron expression from `report_time` setting; add `timezone` parameter to `CronTrigger`
-- [ ] **Step 3:** Update `cron_service.py` — pass `Container` (or `TextToSQLUseCase` + `TelegramNotifier`) to `generate_and_send_report()`
-- [ ] **Step 4:** Implement `generate_and_send_report()`:
+- [x] **Step 1:** Update `settings_model.py` — add `report_time: str = "21:00"` and `report_timezone: str = "Asia/Tehran"` fields
+- [x] **Step 2:** Update `cron_service.py` — replace `_FREQUENCY_CRON_MAP` with dynamic cron expression from `report_time` setting; add `timezone` parameter to `CronTrigger`
+- [x] **Step 3:** Update `cron_service.py` — pass `Container` (or `TextToSQLUseCase` + `TelegramNotifier`) to `generate_and_send_report()`
+- [x] **Step 4:** Implement `generate_and_send_report()`:
   - Build natural language prompt for daily summary
   - Call `TextToSQLUseCase.execute()` with client timezone info
   - Format results as Markdown (workstation sections + security alerts)
   - Handle zero-events case with "No activity detected" message
   - Send via `TelegramNotifier` with retry logic (3 attempts, exponential backoff)
-- [ ] **Step 5:** Update `fastapi_app.py` — add `lifespan` context manager to start/stop `CronService`
-- [ ] **Step 6:** Update `api_controller.py` — call `cron_service._refresh_job()` after settings save to update schedule
-- [ ] **Step 7:** Add `test_bug_031_cron_parses_report_time` — verify cron expression generation from "21:00" + "Asia/Tehran"
-- [ ] **Step 8:** Add `test_bug_031_report_formats_zero_events` — verify report generation handles empty result set
-- [ ] **Step 9:** Run `ruff check src/ tests/` — 0 errors
-- [ ] **Step 10:** Run `python -m pytest tests/ -v` — all pass
-- [ ] **Step 11:** Update `Phase13_Roadmap.md` and `BUG_FIXING_DISCIPLINE.md` — BUG-031 Fixed
+- [x] **Step 5:** Update `fastapi_app.py` — add `lifespan` context manager to start/stop `CronService`
+- [x] **Step 6:** Update `api_controller.py` — call `cron_service._refresh_job()` after settings save to update schedule
+- [x] **Step 7:** Add `test_bug_031_cron_parses_report_time` — verify cron expression generation from "21:00" + "Asia/Tehran"
+- [x] **Step 8:** Add `test_bug_031_report_formats_zero_events` — verify report generation handles empty result set
+- [x] **Step 9:** Run `ruff check src/ tests/` — **0 errors**
+- [x] **Step 10:** Run `python -m pytest tests/ -v` — **67 passed, 0 failed** (58 baseline + 9 new)
+- [x] **Step 11:** Update `Phase13_Roadmap.md` and `BUG_FIXING_DISCIPLINE.md` — BUG-031 Fixed
 
 ---
 
@@ -78,5 +78,5 @@
 | Bug ID | Phase | Description | Status |
 |--------|-------|-------------|--------|
 | BUG-030 | 13.1 | LLM lacks context for `_table` and `_sensitive` Frigate zone naming conventions | Fixed |
-| BUG-031 | 13.2 | Backend CronService scheduler is not integrated with FastAPI lifespan and Telegram reporting logic is unimplemented | Open |
+| BUG-031 | 13.2 | Backend CronService scheduler is not integrated with FastAPI lifespan and Telegram reporting logic is unimplemented | Fixed |
 | BUG-032 | 13.3 | Flutter frontend lacks UI settings for Telegram Bot configuration and reporting schedules | Open |

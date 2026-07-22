@@ -1,5 +1,6 @@
 import logging
 import sys
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -10,6 +11,7 @@ from frigate_intelligence.interface_adapters.controllers.api_controller import (
 from frigate_intelligence.infrastructure.config.settings_manager import (
     SettingsManager,
 )
+from frigate_intelligence.infrastructure.scheduler.cron_service import CronService
 from frigate_intelligence.infrastructure.api.routes.event_routes import (
     create_event_router,
 )
@@ -28,10 +30,22 @@ logging.basicConfig(
 
 
 def create_app(container: Container) -> FastAPI:
+    settings_manager = SettingsManager()
+    cron_service = CronService(settings_manager=settings_manager, container=container)
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        cron_service.start()
+        app.state.cron_service = cron_service
+        app.state.settings_manager = settings_manager
+        yield
+        cron_service.stop()
+
     app = FastAPI(
         title="Frigate Intelligence Platform",
         version="0.1.0",
         description="AI-powered Frigate NVR analytics API",
+        lifespan=lifespan,
     )
 
     app.add_middleware(
@@ -44,8 +58,9 @@ def create_app(container: Container) -> FastAPI:
 
     controller = APIController(
         container.text_to_sql_use_case,
-        settings_manager=SettingsManager(),
+        settings_manager=settings_manager,
         frigate_repo=container.frigate_repo,
+        cron_service=cron_service,
     )
     app.include_router(controller.router)
 
