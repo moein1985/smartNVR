@@ -1,0 +1,79 @@
+# ──────────────────────────────────────────────────────────────
+# Dockerfile.obfuscated — Multi-stage build for IP protection
+#
+# Stage 1 (builder): Copy raw source, install deps, run obfuscation
+# Stage 2 (production): Copy ONLY obfuscated files — no raw .py source
+# ──────────────────────────────────────────────────────────────
+
+# ─── Stage 1: Builder ───
+FROM python:3.12-slim AS builder
+
+WORKDIR /build
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    sqlite3 \
+    bash \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir uv
+
+# Copy project metadata and source
+COPY pyproject.toml ./
+COPY src/ ./src/
+COPY scripts/obfuscate_backend.sh ./scripts/obfuscate_backend.sh
+
+RUN chmod +x scripts/obfuscate_backend.sh
+
+# Install build dependencies (pyarmor) for obfuscation
+RUN uv pip install --system --no-cache ".[build]" || true
+
+# Install runtime dependencies so the app can run from obfuscated code
+RUN uv pip install --system --no-cache .
+
+# Run obfuscation: outputs to /build/dist/
+RUN ./scripts/obfuscate_backend.sh src dist
+
+# Verify: no raw .py files in dist/
+RUN RAW_COUNT=$(find dist -name "*.py" | wc -l) && \
+    if [ "$RAW_COUNT" -gt 0 ]; then \
+        echo "FATAL: $RAW_COUNT raw .py files found in dist/ — aborting!"; \
+        exit 1; \
+    fi
+
+# ─── Stage 2: Production ───
+FROM python:3.12-slim AS production
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    sqlite3 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir uv
+
+# Copy project metadata for dependency resolution
+COPY pyproject.toml ./
+
+# Install runtime dependencies ONLY (no source code yet)
+RUN uv pip install --system --no-cache . \
+    && uv pip install --system --no-cache docker psutil pyyaml
+
+# Copy ONLY obfuscated files from builder — NO raw src/ directory
+COPY --from=builder /build/dist/ ./src/
+
+# Create data directories
+RUN mkdir -p /app/data/logs /app/data/updates
+
+# CRITICAL: Verify no raw .py files exist in the final image
+RUN RAW_COUNT=$(find /app/src -name "*.py" | wc -l) && \
+    echo "Raw .py files in final image: $RAW_COUNT" && \
+    if [ "$RAW_COUNT" -gt 0 ]; then \
+        echo "FATAL: Raw source code leaked into production image!"; \
+        exit 1; \
+    fi && \
+    echo "OK: No raw .py files in production image."
+
+EXPOSE 8000
+
+# Run from obfuscated bytecode
+CMD ["python", "-m", "frigate_intelligence.server"]

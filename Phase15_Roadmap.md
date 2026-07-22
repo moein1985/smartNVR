@@ -40,12 +40,14 @@
 
 ## Sub-Phase 15.3: IP Protection & Obfuscation (2–3 days)
 
-- [ ] Step 1: Evaluate PyArmor trial — obfuscate `src/frigate_intelligence/`
-- [ ] Step 2: Create multi-stage `Dockerfile.obfuscated`
-- [ ] Step 3: Update CI/CD: `flutter build apk --obfuscate --split-debug-info`
-- [ ] Step 4: Create `docker save` build script for tarball generation
-- [ ] Step 5: Verify obfuscated container passes all tests
-- [ ] Step 6: Secure debug symbol storage policy
+- [x] Step 1: Evaluate PyArmor trial — obfuscate `src/frigate_intelligence/`
+- [x] Step 2: Create multi-stage `Dockerfile.obfuscated`
+- [x] Step 3: Update CI/CD: `flutter build apk --obfuscate --split-debug-info`
+- [x] Step 4: Create `docker save` build script for tarball generation
+- [x] Step 5: Verify obfuscated container passes all tests
+- [x] Step 6: Secure debug symbol storage policy
+
+**✅ Sub-Phase 15.3 COMPLETE — IP Protection & Obfuscation**
 
 ---
 
