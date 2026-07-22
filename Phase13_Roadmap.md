@@ -81,6 +81,7 @@
 | BUG-030 | 13.1 | LLM lacks context for `_table` and `_sensitive` Frigate zone naming conventions | Fixed |
 | BUG-031 | 13.2 | Backend CronService scheduler is not integrated with FastAPI lifespan and Telegram reporting logic is unimplemented | Fixed |
 | BUG-032 | 13.3 | Flutter frontend lacks UI settings for Telegram Bot configuration and reporting schedules | Fixed |
+| BUG-033 | 13.4 | `generate_and_send_report()` fails with pytz `Not naive datetime` error when computing timezone offset | Fixed |
 
 ---
 

@@ -49,9 +49,8 @@ class _SyncedMockClient implements BaseApiClient {
     'bale_enabled': false,
     'bale_bot_token': '',
     'bale_chat_id': '',
-    'report_frequency': 'disabled',
     'report_target': 'telegram',
-    'report_time': '21:00',
+    'report_interval_hours': 24,
     'report_timezone': 'Asia/Tehran',
   };
 

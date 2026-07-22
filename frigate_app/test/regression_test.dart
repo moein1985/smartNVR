@@ -242,8 +242,8 @@ void main() {
       // Chat ID field
       expect(find.text('Telegram Chat ID'), findsOneWidget);
 
-      // Report Time field
-      expect(find.text('ساعت گزارش (HH:MM)'), findsOneWidget);
+      // Report Interval field
+      expect(find.text('بازه گزارش‌گیری (ساعت)'), findsOneWidget);
 
       // Timezone dropdown
       expect(find.text('منطقه زمانی'), findsOneWidget);
@@ -326,9 +326,8 @@ class _SkewableMockApiClient implements BaseApiClient {
       'bale_enabled': false,
       'bale_bot_token': '',
       'bale_chat_id': '',
-      'report_frequency': 'disabled',
       'report_target': 'telegram',
-      'report_time': '21:00',
+      'report_interval_hours': 24,
       'report_timezone': 'Asia/Tehran',
     };
   }

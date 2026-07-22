@@ -1,8 +1,8 @@
-"""Regression tests for BUG-031: CronService scheduler and Telegram report generation."""
+"""Regression tests for BUG-031/BUG-034: CronService scheduler and Telegram report generation."""
 import json
 from unittest.mock import MagicMock
 
-from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
 
 from frigate_intelligence.config.dependencies import Container
 from frigate_intelligence.domain.models.settings_model import SettingsModel
@@ -11,7 +11,7 @@ from frigate_intelligence.infrastructure.config.settings_manager import (
 )
 from frigate_intelligence.infrastructure.scheduler.cron_service import (
     CronService,
-    _parse_report_time,
+    _build_report_prompt,
     _format_report,
 )
 from frigate_intelligence.use_cases.text_to_sql.text_to_sql_use_case import (
@@ -20,27 +20,21 @@ from frigate_intelligence.use_cases.text_to_sql.text_to_sql_use_case import (
 from frigate_intelligence.domain.entities.query_result import QueryResult
 
 
-def test_bug_031_parse_report_time_valid():
-    """_parse_report_time should correctly parse HH:MM format."""
-    assert _parse_report_time("21:00") == (21, 0)
-    assert _parse_report_time("08:30") == (8, 30)
-    assert _parse_report_time("00:15") == (0, 15)
+def test_bug_034_build_report_prompt_includes_interval():
+    """_build_report_prompt should include the interval hours in the prompt."""
+    prompt = _build_report_prompt(6)
+    assert "past 6 hours" in prompt
+    prompt_24 = _build_report_prompt(24)
+    assert "past 24 hours" in prompt_24
 
 
-def test_bug_031_parse_report_time_invalid():
-    """_parse_report_time should fall back to 21:00 for invalid input."""
-    assert _parse_report_time("invalid") == (21, 0)
-    assert _parse_report_time("") == (21, 0)
-    assert _parse_report_time("25:99") == (25, 99)
-
-
-def test_bug_031_cron_parses_report_time():
-    """CronService should schedule job at the correct hour/minute with timezone."""
+def test_bug_034_cron_uses_interval_trigger():
+    """CronService should schedule job with IntervalTrigger based on report_interval_hours."""
     settings = SettingsModel(
         telegram_enabled=True,
         telegram_bot_token="test_token",
         telegram_chat_id="test_chat",
-        report_time="21:00",
+        report_interval_hours=6,
         report_timezone="Asia/Tehran",
     )
 
@@ -55,12 +49,7 @@ def test_bug_031_cron_parses_report_time():
     assert job is not None
 
     trigger = job.trigger
-    assert isinstance(trigger, CronTrigger)
-    assert str(trigger.timezone) == "Asia/Tehran"
-
-    fields = {f.name: str(f) for f in trigger.fields}
-    assert fields["hour"] == "21"
-    assert fields["minute"] == "0"
+    assert isinstance(trigger, IntervalTrigger)
 
 
 def test_bug_031_cron_disabled_when_telegram_off():
@@ -76,7 +65,7 @@ def test_bug_031_cron_disabled_when_telegram_off():
 
 
 def test_bug_031_report_formats_zero_events():
-    """_format_report should return a fallback message when there are 0 rows."""
+    """_format_report should return a Persian fallback message when there are 0 rows."""
     response = TextToSQLResponse(
         question="test",
         sql="SELECT * FROM event",
@@ -92,8 +81,8 @@ def test_bug_031_report_formats_zero_events():
         playback_intent=None,
     )
 
-    report = _format_report(response, "2026-07-22")
-    assert "No activity detected" in report
+    report = _format_report(response, "2026-07-22", 24)
+    assert "هیچ فعالیت" in report
     assert "2026-07-22" in report
 
 
@@ -114,11 +103,11 @@ def test_bug_031_report_formats_table_events():
         playback_intent=None,
     )
 
-    report = _format_report(response, "2026-07-22")
-    assert "Workstation Activity" in report
+    report = _format_report(response, "2026-07-22", 24)
+    assert "فعالیت در ایستگاه‌های کاری" in report
     assert "moein" in report
     assert "moein_table" in report
-    assert "~8.0h" in report
+    assert "~8.0" in report
 
 
 def test_bug_031_report_formats_sensitive_events():
@@ -138,31 +127,31 @@ def test_bug_031_report_formats_sensitive_events():
         playback_intent=None,
     )
 
-    report = _format_report(response, "2026-07-22")
-    assert "Restricted Area Alerts" in report
+    report = _format_report(response, "2026-07-22", 24)
+    assert "هشدارهای مناطق حساس" in report
     assert "warehouse_sensitive" in report
     assert "unknown" in report
-    assert "1 security alerts" in report
+    assert "1 هشدار امنیتی" in report
 
 
-def test_bug_031_settings_model_has_new_fields():
-    """SettingsModel should include report_time and report_timezone with defaults."""
+def test_bug_034_settings_model_has_interval_field():
+    """SettingsModel should include report_interval_hours with default 24."""
     settings = SettingsModel()
-    assert settings.report_time == "21:00"
+    assert settings.report_interval_hours == 24
     assert settings.report_timezone == "Asia/Tehran"
 
 
-def test_bug_031_settings_model_serialization():
-    """SettingsModel should serialize new fields to JSON and back."""
+def test_bug_034_settings_model_serialization():
+    """SettingsModel should serialize report_interval_hours to JSON and back."""
     settings = SettingsModel(
-        report_time="18:30",
+        report_interval_hours=6,
         report_timezone="Europe/London",
     )
     raw = settings.model_dump_json()
     data = json.loads(raw)
-    assert data["report_time"] == "18:30"
+    assert data["report_interval_hours"] == 6
     assert data["report_timezone"] == "Europe/London"
 
     restored = SettingsModel(**data)
-    assert restored.report_time == "18:30"
+    assert restored.report_interval_hours == 6
     assert restored.report_timezone == "Europe/London"

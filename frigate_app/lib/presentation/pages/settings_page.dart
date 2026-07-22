@@ -17,7 +17,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   late TextEditingController _portController;
   late TextEditingController _botTokenController;
   late TextEditingController _chatIdController;
-  late TextEditingController _reportTimeController;
+  late TextEditingController _reportIntervalController;
   ConnectionStatus _status = ConnectionStatus.idle;
   bool _disposed = false;
   bool _isMockMode = false;
@@ -39,7 +39,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     _portController = TextEditingController();
     _botTokenController = TextEditingController();
     _chatIdController = TextEditingController();
-    _reportTimeController = TextEditingController(text: '21:00');
+    _reportIntervalController = TextEditingController(text: '24');
     final configAsync = ref.read(serverConfigProvider);
     configAsync.whenData((config) {
       if (!_disposed) {
@@ -62,8 +62,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               settings['telegram_bot_token'] as String? ?? '';
           _chatIdController.text =
               settings['telegram_chat_id'] as String? ?? '';
-          _reportTimeController.text =
-              settings['report_time'] as String? ?? '21:00';
+          _reportIntervalController.text =
+              (settings['report_interval_hours'] ?? 24).toString();
           _reportTimezone =
               settings['report_timezone'] as String? ?? 'Asia/Tehran';
         });
@@ -78,9 +78,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       'telegram_enabled': _telegramEnabled,
       'telegram_bot_token': _botTokenController.text.trim(),
       'telegram_chat_id': _chatIdController.text.trim(),
-      'report_time': _reportTimeController.text.trim(),
+      'report_interval_hours':
+          int.tryParse(_reportIntervalController.text.trim()) ?? 24,
       'report_timezone': _reportTimezone,
-      'report_frequency': _telegramEnabled ? 'daily' : 'disabled',
       'report_target': 'telegram',
     };
     try {
@@ -282,18 +282,25 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 enabled: _telegramEnabled,
               ),
               const SizedBox(height: 20),
-              Text('ساعت گزارش (HH:MM)',
+              Text('بازه گزارش‌گیری (ساعت)',
                   style: Theme.of(context).textTheme.labelLarge),
               const SizedBox(height: 8),
-              TextField(
-                controller: _reportTimeController,
+              TextFormField(
+                controller: _reportIntervalController,
                 decoration: const InputDecoration(
-                  hintText: '21:00',
+                  hintText: '24',
                   border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.access_time),
+                  prefixIcon: Icon(Icons.schedule),
                 ),
-                keyboardType: TextInputType.datetime,
+                keyboardType: TextInputType.number,
                 enabled: _telegramEnabled,
+                validator: (value) {
+                  final hours = int.tryParse(value ?? '');
+                  if (hours == null || hours < 1) {
+                    return 'عدد بزرگ‌تر از ۰ وارد کنید';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 20),
               Text('منطقه زمانی',
@@ -343,7 +350,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     _portController.dispose();
     _botTokenController.dispose();
     _chatIdController.dispose();
-    _reportTimeController.dispose();
+    _reportIntervalController.dispose();
     super.dispose();
   }
 }

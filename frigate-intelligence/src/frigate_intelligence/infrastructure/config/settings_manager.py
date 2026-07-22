@@ -10,7 +10,7 @@ _DEFAULT_SETTINGS = SettingsModel()
 
 
 class SettingsManager:
-    def __init__(self, file_path: str = "settings.json") -> None:
+    def __init__(self, file_path: str = "data/settings.json") -> None:
         self._file_path = Path(file_path)
 
     def load(self) -> SettingsModel:

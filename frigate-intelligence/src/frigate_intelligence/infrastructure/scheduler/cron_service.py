@@ -4,7 +4,7 @@ import logging
 
 import pytz
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
 
 from frigate_intelligence.config.dependencies import Container
 from frigate_intelligence.domain.entities.notification import Notification
@@ -21,33 +21,29 @@ from frigate_intelligence.use_cases.text_to_sql.text_to_sql_use_case import (
 
 logger = logging.getLogger(__name__)
 
-_REPORT_PROMPT = (
-    "Summarize today's events for all _table and _sensitive zones. "
-    "Group them by person/zone and provide total active hours and security alerts. "
-    "Include first_seen, last_seen, and total_minutes for each person at a _table zone. "
-    "List all detections in _sensitive zones with timestamps."
-)
-
 _MAX_RETRIES = 3
 _RETRY_BASE_DELAY = 2.0
 
 
-def _parse_report_time(report_time: str) -> tuple[int, int]:
-    parts = report_time.split(":")
-    if len(parts) != 2:
-        return 21, 0
-    try:
-        return int(parts[0]), int(parts[1])
-    except ValueError:
-        return 21, 0
+def _build_report_prompt(interval_hours: int) -> str:
+    return (
+        f"Summarize events for the past {interval_hours} hours "
+        "for all _table and _sensitive zones. "
+        "Group them by person/zone and provide total active hours and security alerts. "
+        "Include first_seen, last_seen, and total_minutes for each person at a _table zone. "
+        "List all detections in _sensitive zones with timestamps."
+    )
 
 
-def _format_report(response, report_date: str) -> str:
+def _format_report(response, report_date: str, interval_hours: int) -> str:
     rows = response.result.rows
     columns = response.result.columns
 
     if not rows:
-        return f"📊 Daily Security & HR Report — {report_date}\n\nNo activity detected in monitored zones today."
+        return (
+            f"📊 گزارش امنیتی و منابع انسانی — {report_date}\n\n"
+            f"در {interval_hours} ساعت گذشته، هیچ فعالیت‌ای در مناطق تحت نظارت ثبت نشده است."
+        )
 
     table_rows = []
     sensitive_rows = []
@@ -69,10 +65,10 @@ def _format_report(response, report_date: str) -> str:
         else:
             table_rows.append(row)
 
-    lines = [f"📊 Daily Security & HR Report — {report_date}", ""]
+    lines = [f"📊 گزارش امنیتی و منابع انسانی — {report_date}", ""]
 
     if table_rows:
-        lines.append("🏢 Workstation Activity:")
+        lines.append("🏢 فعالیت در ایستگاه‌های کاری:")
         lines.append("━━━━━━━━━━━━━━━━━━━━━━━")
         for row in table_rows:
             row_dict = dict(zip(columns, row))
@@ -85,15 +81,15 @@ def _format_report(response, report_date: str) -> str:
             if total_minutes:
                 hours = float(total_minutes) / 60.0
                 lines.append(f"👤 {sub_label} ({zones}):")
-                lines.append(f"   First seen: {first_seen} | Last seen: {last_seen} | Active: ~{hours:.1f}h")
+                lines.append(f"   اولین مشاهده: {first_seen} | آخرین مشاهده: {last_seen} | فعال: ~{hours:.1f} ساعت")
             elif event_count:
-                lines.append(f"👤 {sub_label} ({zones}): {event_count} events, {first_seen} → {last_seen}")
+                lines.append(f"👤 {sub_label} ({zones}): {event_count} رویداد, {first_seen} → {last_seen}")
             else:
                 lines.append(f"👤 {sub_label} ({zones}): {first_seen} → {last_seen}")
         lines.append("")
 
     if sensitive_rows:
-        lines.append("🔒 Restricted Area Alerts:")
+        lines.append("🔒 هشدارهای مناطق حساس:")
         lines.append("━━━━━━━━━━━━━━━━━━━━━━━")
         for row in sensitive_rows:
             row_dict = dict(zip(columns, row))
@@ -101,12 +97,12 @@ def _format_report(response, report_date: str) -> str:
             sub_label = row_dict.get("sub_label", "unknown")
             start_time = row_dict.get("start_time", "")
             camera = row_dict.get("camera", "")
-            lines.append(f"⚠️ {zones}: {start_time} — {sub_label} detected ({camera})")
+            lines.append(f"⚠️ {zones}: {start_time} — {sub_label} شناسایی شد ({camera})")
         lines.append("")
 
     total_employees = len({str(r[sub_label_idx]) for r in table_rows}) if sub_label_idx is not None and table_rows else 0
     total_alerts = len(sensitive_rows)
-    lines.append(f"📈 Summary: {total_employees} employees tracked, {total_alerts} security alerts.")
+    lines.append(f"📈 خلاصه: {total_employees} کارمند ردیابی شد، {total_alerts} هشدار امنیتی.")
 
     return "\n".join(lines)
 
@@ -124,26 +120,42 @@ async def generate_and_send_report(
     tz = pytz.timezone(settings.report_timezone)
     now_in_tz = datetime.datetime.now(tz)
     report_date = now_in_tz.strftime("%Y-%m-%d")
-    logger.info(f"Generating daily report for {report_date} ({settings.report_timezone})")
+    interval_hours = settings.report_interval_hours
+    logger.info(
+        f"Generating report for {report_date} ({settings.report_timezone}), "
+        f"interval={interval_hours}h"
+    )
 
     try:
-        offset_minutes = int(tz.utcoffset(now_in_tz).total_seconds() / 60)
+        offset_minutes = int(now_in_tz.utcoffset().total_seconds() / 60)
         client_tz_info = {
             "timezone": settings.report_timezone,
             "offset_minutes": offset_minutes,
             "timestamp": datetime.datetime.now(datetime.timezone.utc).timestamp(),
         }
 
+        prompt = _build_report_prompt(interval_hours)
         req = TextToSQLRequest(
-            question=_REPORT_PROMPT,
+            question=prompt,
             max_retries=3,
             client_tz_info=client_tz_info,
         )
         response = container.text_to_sql_use_case.execute(req)
-        message = _format_report(response, report_date)
+        message = _format_report(response, report_date, interval_hours)
+
+        if response.result.row_count > 0:
+            explanation = response.explanation
+            if explanation:
+                message = (
+                    f"در {interval_hours} ساعت گذشته، خلاصه‌ای از رویدادهای ثبت شده:\n\n"
+                    f"{explanation}\n\n{message}"
+                )
     except Exception as e:
         logger.error(f"Failed to generate report via LLM: {e}")
-        message = f"📊 Daily Security & HR Report — {report_date}\n\n⚠️ Report generation failed: {e}"
+        message = (
+            f"📊 گزارش امنیتی و منابع انسانی — {report_date}\n\n"
+            f"⚠️ خطا در تولید گزارش: {e}"
+        )
 
     notifier = TelegramNotifier(
         bot_token=settings.telegram_bot_token,
@@ -199,17 +211,11 @@ class CronService:
             logger.info("Telegram reporting is disabled, no job scheduled")
             return
 
-        hour, minute = _parse_report_time(settings.report_time)
+        interval_hours = settings.report_interval_hours
+        if interval_hours < 1:
+            interval_hours = 24
 
-        try:
-            tz = pytz.timezone(settings.report_timezone)
-        except Exception:
-            logger.warning(
-                f"Invalid timezone '{settings.report_timezone}', falling back to UTC"
-            )
-            tz = pytz.UTC
-
-        trigger = CronTrigger(hour=hour, minute=minute, timezone=tz)
+        trigger = IntervalTrigger(hours=interval_hours)
         self._scheduler.add_job(
             generate_and_send_report,
             trigger=trigger,
@@ -218,5 +224,5 @@ class CronService:
             replace_existing=True,
         )
         logger.info(
-            f"Scheduled report job at {hour:02d}:{minute:02d} {settings.report_timezone}"
+            f"Scheduled report job every {interval_hours}h"
         )
