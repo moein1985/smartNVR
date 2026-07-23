@@ -176,14 +176,14 @@ Before starting each sub-phase, verify:
 
 ## Sub-Phase 16.3: Report Builder UI (Web Panel)
 
-- [ ] Step 1: Create `src/lib/report-rules-api.ts` — API client functions for rule CRUD + history
-- [ ] Step 2: Create `src/hooks/use-report-rules.ts` — TanStack Query hooks for rules list
-- [ ] Step 3: Create `src/app/(dashboard)/reports/page.tsx` — rules list page:
+- [x] Step 1: Create `src/lib/report-rules-api.ts` — API client functions for rule CRUD + history
+- [x] Step 2: Create `src/hooks/use-report-rules.ts` — TanStack Query hooks for rules list
+- [x] Step 3: Create `src/app/(dashboard)/reports/page.tsx` — rules list page:
   - Table: name, zones, interval, destination, enabled toggle, last run, last status
   - "Create Rule" button → navigates to `/reports/new`
   - "Test Run" button per rule
   - "History" button per rule → navigates to `/reports/{id}/history`
-- [ ] Step 4: Create `src/app/(dashboard)/reports/[id]/page.tsx` — rule editor form:
+- [x] Step 4: Create `src/app/(dashboard)/reports/[id]/page.tsx` — rule editor form:
   - Name input
   - Zone multi-select (fetched from `/api/v1/system/frigate-config` → parse zone keys)
   - Camera multi-select (fetched from `/api/v1/cameras`)
@@ -193,12 +193,12 @@ Before starting each sub-phase, verify:
   - Custom prompt textarea (optional, with placeholder showing auto-generated prompt)
   - Enable/disable toggle
   - Save + Delete buttons
-- [ ] Step 5: Create `src/app/(dashboard)/reports/[id]/history/page.tsx` — execution history table:
+- [x] Step 5: Create `src/app/(dashboard)/reports/[id]/history/page.tsx` — execution history table:
   - Date/time, status, destination, message preview (truncated)
   - Last 100 entries
-- [ ] Step 6: Create `src/components/report-rule-form.tsx` — reusable form component
-- [ ] Step 8: Verify no silent failures in web panel API calls (console.error for failed requests)
-- [ ] Step 9: Web panel lint (`npm run lint`) + build (`npm run build`) — 0 errors
+- [x] Step 6: Create `src/components/report-rule-form.tsx` — reusable form component
+- [x] Step 8: Verify no silent failures in web panel API calls (console.error for failed requests)
+- [x] Step 9: Web panel lint (`npm run lint`) + build (`npm run build`) — 0 errors, build success
 
 ---
 
