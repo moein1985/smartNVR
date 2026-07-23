@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'api_client.dart';
+import '../models/report_rule.dart';
 
 class MockApiClient implements BaseApiClient {
   @override
@@ -263,5 +264,104 @@ class MockApiClient implements BaseApiClient {
       'message': 'Frigate config updated (mock)',
       'config': payload,
     };
+  }
+
+  @override
+  Future<List<ReportRule>> getReportRules() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return [
+      ReportRule(
+        id: 'mock-rule-1',
+        name: 'گزارش روزانه امنیت',
+        enabled: true,
+        zones: ['main_gate', 'warehouse_sensitive'],
+        cameras: ['cam1'],
+        labels: ['person'],
+        intervalHours: 24,
+        destination: 'telegram',
+        createdAt: '2026-07-20T08:00:00',
+        lastRun: '2026-07-23T08:00:00',
+        lastStatus: 'success',
+      ),
+      ReportRule(
+        id: 'mock-rule-2',
+        name: 'حضور پرسنل',
+        enabled: false,
+        zones: ['ahmad_table', 'soleymani_table'],
+        cameras: ['cam1'],
+        labels: ['person'],
+        intervalHours: 12,
+        destination: 'bale',
+        createdAt: '2026-07-21T10:00:00',
+        lastRun: '',
+        lastStatus: '',
+      ),
+    ];
+  }
+
+  @override
+  Future<ReportRule> createReportRule(Map<String, dynamic> payload) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return ReportRule.fromJson({
+      ...payload,
+      'id': 'mock-rule-${DateTime.now().millisecondsSinceEpoch}',
+      'created_at': DateTime.now().toIso8601String(),
+      'last_run': '',
+      'last_status': '',
+    });
+  }
+
+  @override
+  Future<ReportRule> updateReportRule(String id, Map<String, dynamic> payload) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return ReportRule.fromJson({
+      'id': id,
+      'name': payload['name'] ?? 'Updated Rule',
+      'enabled': payload['enabled'] ?? true,
+      'zones': payload['zones'] ?? [],
+      'cameras': payload['cameras'] ?? [],
+      'labels': payload['labels'] ?? [],
+      'interval_hours': payload['interval_hours'] ?? 24,
+      'timezone': payload['timezone'] ?? 'Asia/Tehran',
+      'destination': payload['destination'] ?? 'telegram',
+      'chat_id': payload['chat_id'] ?? '',
+      'prompt_template': payload['prompt_template'] ?? '',
+      'include_summary': payload['include_summary'] ?? true,
+      'include_raw_data': payload['include_raw_data'] ?? false,
+      'created_at': '2026-07-20T08:00:00',
+      'last_run': '',
+      'last_status': '',
+    });
+  }
+
+  @override
+  Future<void> deleteReportRule(String id) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+  }
+
+  @override
+  Future<Map<String, dynamic>> testRunRule(String id) async {
+    await Future.delayed(const Duration(seconds: 2));
+    return {
+      'status': 'ok',
+      'message': 'Report generated (mock)',
+      'rule_id': id,
+    };
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getRuleHistory(String id) async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    return [
+      {
+        'id': 'hist-1',
+        'rule_id': id,
+        'rule_name': 'Test Rule',
+        'executed_at': '2026-07-23T08:00:00',
+        'status': 'success',
+        'message_preview': '📊 گزارش — 3 نفر حاضر',
+        'destination': 'telegram',
+      },
+    ];
   }
 }

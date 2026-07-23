@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/orchestrator_provider.dart';
+import '../providers/server_config_provider.dart';
 
 class OrchestratorPage extends ConsumerStatefulWidget {
   const OrchestratorPage({super.key});
@@ -299,71 +300,245 @@ class _ContainersSection extends StatelessWidget {
   }
 }
 
-class _ContainerTile extends StatelessWidget {
+class _ContainerTile extends ConsumerStatefulWidget {
   final Map<String, dynamic> container;
 
   const _ContainerTile({required this.container});
 
   @override
+  ConsumerState<_ContainerTile> createState() => _ContainerTileState();
+}
+
+class _ContainerTileState extends ConsumerState<_ContainerTile> {
+  late TextEditingController _memoryController;
+  final Set<int> _selectedCores = {};
+  String? _selectedGpu;
+  bool _isApplying = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _memoryController = TextEditingController(text: '4');
+  }
+
+  @override
+  void dispose() {
+    _memoryController.dispose();
+    super.dispose();
+  }
+
+  bool get _supportsGpu {
+    final cap = widget.container['capability'] as Map<String, dynamic>?;
+    return cap?['supports_gpu'] as bool? ?? false;
+  }
+
+  String get _detectionStrategy {
+    final cap = widget.container['capability'] as Map<String, dynamic>?;
+    return cap?['detection_strategy'] as String? ?? 'cpu_only';
+  }
+
+  Future<void> _applyAssignment() async {
+    final name = widget.container['name'] ?? 'unknown';
+    setState(() => _isApplying = true);
+    try {
+      final client = ref.read(apiClientProvider);
+      await client.assignResources({
+        'container': name,
+        'cpu_cores': _selectedCores.toList()..sort(),
+        'gpu': _supportsGpu && _selectedGpu != null ? _selectedGpu : null,
+        'memory_limit_gb': int.tryParse(_memoryController.text.trim()) ?? 4,
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('منابع $name اعمال شد'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('[Orchestrator] Failed to assign resources: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('خطا در اعمال منابع: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isApplying = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final name = container['name'] ?? 'unknown';
-    final image = container['image'] ?? '';
-    final status = container['status'] ?? 'unknown';
-    final shortId = container['short_id'] ?? '';
-    final ports = container['ports'] as List? ?? [];
+    final name = widget.container['name'] ?? 'unknown';
+    final image = widget.container['image'] ?? '';
+    final status = widget.container['status'] ?? 'unknown';
+    final shortId = widget.container['short_id'] ?? '';
+    final ports = widget.container['ports'] as List? ?? [];
+    final hw = ref.watch(orchestratorProvider).hardware;
+    final cpuCores = (hw?['cpu']?['cores'] ?? 8) as int;
+    final gpus = (hw?['gpus'] as List? ?? []);
 
     final isRunning = status == 'running';
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Container(
-            width: 10,
-            height: 10,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: isRunning ? Colors.green : Colors.red,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade900,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade700),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
-                Text(name, style: Theme.of(context).textTheme.bodyMedium),
-                const SizedBox(height: 2),
-                Text(
-                  '$image • $status • $shortId',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey,
-                      ),
-                ),
-                if (ports.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Wrap(
-                      spacing: 6,
-                      children: ports.map((p) {
-                        final port = p as Map<String, dynamic>;
-                        final hostPort = port['host_port'] ?? '';
-                        final containerPort = port['container_port'] ?? '';
-                        return Chip(
-                          label: Text(
-                            '$hostPort → $containerPort',
-                            style: const TextStyle(fontSize: 10),
-                          ),
-                          padding: EdgeInsets.zero,
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                        );
-                      }).toList(),
-                    ),
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isRunning ? Colors.green : Colors.red,
                   ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(name, style: Theme.of(context).textTheme.bodyMedium),
+                      const SizedBox(height: 2),
+                      Text(
+                        '$image • $status • $shortId',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Colors.grey,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
-          ),
-        ],
+            if (ports.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Wrap(
+                  spacing: 6,
+                  children: ports.map((p) {
+                    final port = p as Map<String, dynamic>;
+                    final hostPort = port['host_port'] ?? '';
+                    final containerPort = port['container_port'] ?? '';
+                    return Chip(
+                      label: Text(
+                        '$hostPort → $containerPort',
+                        style: const TextStyle(fontSize: 10),
+                      ),
+                      padding: EdgeInsets.zero,
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    );
+                  }).toList(),
+                ),
+              ),
+            const Divider(height: 24),
+            Text('هسته‌های CPU',
+                style: Theme.of(context).textTheme.labelMedium),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: List.generate(cpuCores, (i) {
+                final isSelected = _selectedCores.contains(i);
+                return FilterChip(
+                  label: Text('${i + 1}'),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    setState(() {
+                      if (selected) {
+                        _selectedCores.add(i);
+                      } else {
+                        _selectedCores.remove(i);
+                      }
+                    });
+                  },
+                  padding: EdgeInsets.zero,
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                );
+              }),
+            ),
+            const SizedBox(height: 16),
+            Text('کارت گرافیک',
+                style: Theme.of(context).textTheme.labelMedium),
+            const SizedBox(height: 8),
+            if (_supportsGpu)
+              DropdownButtonFormField<String>(
+                initialValue: _selectedGpu,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                hint: const Text('انتخاب GPU'),
+                items: [
+                  const DropdownMenuItem(value: null, child: Text('بدون GPU')),
+                  ...gpus.map((g) {
+                    final gpu = g as Map<String, dynamic>;
+                    return DropdownMenuItem(
+                      value: 'gpu-${gpu['index'] ?? 0}',
+                      child: Text(gpu['name'] ?? 'GPU #${gpu['index']}'),
+                    );
+                  }),
+                ],
+                onChanged: (v) => setState(() => _selectedGpu = v),
+              )
+            else
+              Tooltip(
+                message: 'این کانتینر از GPU پشتیبانی نمی‌کند ($_detectionStrategy)',
+                child: DropdownButtonFormField<String>(
+                  initialValue: null,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    isDense: true,
+                    prefixIcon: Icon(Icons.warning, color: Colors.orange),
+                  ),
+                  hint: const Text('GPU پشتیبانی نمی‌شود'),
+                  items: const [],
+                  onChanged: null,
+                ),
+              ),
+            const SizedBox(height: 16),
+            Text('محدودیت حافظه (GB)',
+                style: Theme.of(context).textTheme.labelMedium),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _memoryController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 40,
+              child: FilledButton.icon(
+                onPressed: _isApplying ? null : _applyAssignment,
+                icon: _isApplying
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.check, size: 18),
+                label: const Text('اعمال'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

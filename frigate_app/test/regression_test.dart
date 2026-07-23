@@ -11,6 +11,7 @@ import 'package:frigate_intelligence/presentation/providers/navigation_provider.
 import 'package:frigate_intelligence/presentation/models/playback_params.dart';
 import 'package:frigate_intelligence/presentation/widgets/inline_vod_player.dart';
 import 'package:frigate_intelligence/data/datasources/api_client.dart';
+import 'package:frigate_intelligence/data/models/report_rule.dart';
 import 'package:frigate_intelligence/presentation/pages/settings_page.dart';
 
 void main() {
@@ -371,4 +372,25 @@ class _SkewableMockApiClient implements BaseApiClient {
   @override
   Future<Map<String, dynamic>> updateFrigateConfig(Map<String, dynamic> payload) async =>
       {'status': 'ok', 'message': 'Config updated (mock)', 'config': payload};
+
+  @override
+  Future<List<ReportRule>> getReportRules() async => [];
+
+  @override
+  Future<ReportRule> createReportRule(Map<String, dynamic> payload) async =>
+      ReportRule.fromJson({...payload, 'id': 'test', 'created_at': '', 'last_run': '', 'last_status': ''});
+
+  @override
+  Future<ReportRule> updateReportRule(String id, Map<String, dynamic> payload) async =>
+      ReportRule.fromJson({...payload, 'id': id, 'created_at': '', 'last_run': '', 'last_status': ''});
+
+  @override
+  Future<void> deleteReportRule(String id) async {}
+
+  @override
+  Future<Map<String, dynamic>> testRunRule(String id) async =>
+      {'status': 'ok', 'message': 'Test run', 'rule_id': id};
+
+  @override
+  Future<List<Map<String, dynamic>>> getRuleHistory(String id) async => [];
 }

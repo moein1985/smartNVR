@@ -2,6 +2,7 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import '../../core/config/app_config.dart';
+import '../models/report_rule.dart';
 
 abstract class BaseApiClient {
   Future<Map<String, dynamic>> query(String question, {int maxRetries});
@@ -28,6 +29,12 @@ abstract class BaseApiClient {
   Future<Map<String, dynamic>> assignResources(Map<String, dynamic> payload);
   Future<Map<String, dynamic>> getFrigateConfig();
   Future<Map<String, dynamic>> updateFrigateConfig(Map<String, dynamic> payload);
+  Future<List<ReportRule>> getReportRules();
+  Future<ReportRule> createReportRule(Map<String, dynamic> payload);
+  Future<ReportRule> updateReportRule(String id, Map<String, dynamic> payload);
+  Future<void> deleteReportRule(String id);
+  Future<Map<String, dynamic>> testRunRule(String id);
+  Future<List<Map<String, dynamic>>> getRuleHistory(String id);
 }
 
 class ApiClient implements BaseApiClient {
@@ -181,5 +188,44 @@ class ApiClient implements BaseApiClient {
   Future<Map<String, dynamic>> updateFrigateConfig(Map<String, dynamic> payload) async {
     final response = await _dio.put('/api/v1/system/frigate-config', data: payload);
     return response.data as Map<String, dynamic>;
+  }
+
+  @override
+  Future<List<ReportRule>> getReportRules() async {
+    final response = await _dio.get('/api/v1/report-rules');
+    final data = response.data;
+    final list = data is List ? data : (data['rules'] as List? ?? []);
+    return list.cast<Map<String, dynamic>>().map(ReportRule.fromJson).toList();
+  }
+
+  @override
+  Future<ReportRule> createReportRule(Map<String, dynamic> payload) async {
+    final response = await _dio.post('/api/v1/report-rules', data: payload);
+    return ReportRule.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  @override
+  Future<ReportRule> updateReportRule(String id, Map<String, dynamic> payload) async {
+    final response = await _dio.put('/api/v1/report-rules/$id', data: payload);
+    return ReportRule.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  @override
+  Future<void> deleteReportRule(String id) async {
+    await _dio.delete('/api/v1/report-rules/$id');
+  }
+
+  @override
+  Future<Map<String, dynamic>> testRunRule(String id) async {
+    final response = await _dio.post('/api/v1/report-rules/$id/test');
+    return response.data as Map<String, dynamic>;
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getRuleHistory(String id) async {
+    final response = await _dio.get('/api/v1/report-rules/$id/history');
+    final data = response.data;
+    final list = data is List ? data : (data['history'] as List? ?? []);
+    return list.cast<Map<String, dynamic>>();
   }
 }

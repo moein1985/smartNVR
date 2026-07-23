@@ -266,35 +266,35 @@ Before starting each sub-phase, verify:
 ## Sub-Phase 16.7: Flutter App Enhancements
 
 ### Pre-Phase Baseline
-- [ ] Record baseline: `flutter test` pass count, `flutter analyze` issue count
+- [x] Record baseline: `flutter test` pass count, `flutter analyze` issue count
 
-- [ ] Step 1: Add `ReportRule` model to Flutter (`lib/data/models/report_rule.dart`)
-- [ ] Step 2: Add report rule CRUD methods to `api_client.dart` + `mock_api_client.dart`
-- [ ] Step 3: Create `report_rules_provider.dart` (Riverpod)
-- [ ] Step 4: Create `report_rules_page.dart` (list + create/edit, RTL Persian)
-- [ ] Step 5: Add "Report Rules" navigation button in `settings_page.dart`
-- [ ] Step 6: Enhance `orchestrator_page.dart` with interactive binding controls (CPU checkboxes, GPU dropdown with validation, memory input)
-- [ ] Step 7: Add `work_hours_start`/`work_hours_end` fields to Flutter settings page
-- [ ] Step 8: Update all test mock clients with new API methods (`_SyncedMockClient`, `_SkewableMockApiClient`, `_MaintenanceMockClient`, `_OrchestratorMockClient`)
-- [ ] Step 9: Flutter tests — naming: `feat_016_7_report_rules_page_renders`, `feat_016_7_report_rules_create_form`, `feat_016_7_orchestrator_interactive_binding`, `feat_016_7_gpu_disabled_for_cpu_only`
-- [ ] Step 10: Verify all catch blocks use `debugPrint('[ReportRules] ...')` / `debugPrint('[Orchestrator] ...')` — no silent failures
-- [ ] Step 11: `flutter analyze` — 0 issues + `flutter test` — all pass, count ≥ baseline
+- [x] Step 1: Add `ReportRule` model to Flutter (`lib/data/models/report_rule.dart`)
+- [x] Step 2: Add report rule CRUD methods to `api_client.dart` + `mock_api_client.dart`
+- [x] Step 3: Create `report_rules_provider.dart` (Riverpod)
+- [x] Step 4: Create `report_rules_page.dart` (list + create/edit, RTL Persian)
+- [x] Step 5: Add "Report Rules" navigation button in `settings_page.dart`
+- [x] Step 6: Enhance `orchestrator_page.dart` with interactive binding controls (CPU checkboxes, GPU dropdown with validation, memory input)
+- [x] Step 7: Add `work_hours_start`/`work_hours_end` fields to Flutter settings page
+- [x] Step 8: Update all test mock clients with new API methods (`_SyncedMockClient`, `_SkewableMockApiClient`, `_MaintenanceMockClient`, `_OrchestratorMockClient`)
+- [x] Step 9: Flutter tests — naming: `feat_016_7_report_rules_page_renders`, `feat_016_7_report_rules_create_form`, `feat_016_7_orchestrator_interactive_binding`, `feat_016_7_gpu_disabled_for_cpu_only`
+- [x] Step 10: Verify all catch blocks use `debugPrint('[ReportRules] ...')` / `debugPrint('[Orchestrator] ...')` — no silent failures
+- [x] Step 11: `flutter analyze` — 0 issues + `flutter test` — all pass, count ≥ baseline
 
 ---
 
 ## Sub-Phase 16.8: Integration & Polish
 
-- [ ] Step 1: E2E test: login as admin → create report rule → test run → verify Telegram delivery
-- [ ] Step 2: E2E test: login as user → verify only Chat page accessible
-- [ ] Step 3: E2E test: assign GPU to frigate → verify override file → verify container restart
-- [ ] Step 4: E2E test: verify CPU-only container GPU dropdown is disabled in UI
-- [ ] Step 5: E2E test: verify report history records last 100 entries with FIFO
-- [ ] Step 6: Update `BUG_FIXING_DISCIPLINE.md`:
+- [x] Step 1: E2E test: login as admin → create report rule → test run → verify Telegram delivery
+- [x] Step 2: E2E test: login as user → verify only Chat page accessible
+- [x] Step 3: E2E test: assign GPU to frigate → verify override file → verify container restart
+- [x] Step 4: E2E test: verify CPU-only container GPU dropdown is disabled in UI
+- [x] Step 5: E2E test: verify report history records last 100 entries with FIFO
+- [x] Step 6: Update `BUG_FIXING_DISCIPLINE.md`:
   - Add `FEAT-016.1` through `FEAT-016.8` entries to Bug Registry table (Section 7)
   - Add new logging prefixes (`[Auth]`, `[ReportScheduler]`, `[BaleNotifier]`, `[ReportRules]`, `[UserManager]`, `[ContainerCapability]`) to Section 5 table
   - Add Web Panel deployment gate rows to Section 6 table
-- [ ] Step 7: Update `Phase16_Roadmap.md` with completion checkmarks
-- [ ] Step 8: Final deployment gate sweep — ALL must pass:
+- [x] Step 7: Update `Phase16_Roadmap.md` with completion checkmarks
+- [x] Step 8: Final deployment gate sweep — ALL must pass:
   | Check | Command | Required |
   |-------|---------|----------|
   | Backend lint | `cd frigate-intelligence && ruff check src/ tests/` | 0 errors |
@@ -303,7 +303,7 @@ Before starting each sub-phase, verify:
   | Flutter tests | `cd frigate_app && flutter test` | All pass |
   | Web panel lint | `cd frigate-web-panel && npm run lint` | 0 errors |
   | Web panel build | `cd frigate-web-panel && npm run build` | Success |
-- [ ] Step 9: Grand finale note
+- [x] Step 9: Grand finale note
 
 ---
 

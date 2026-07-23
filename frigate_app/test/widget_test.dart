@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frigate_intelligence/main.dart';
 import 'package:frigate_intelligence/presentation/providers/server_config_provider.dart';
 import 'package:frigate_intelligence/data/datasources/api_client.dart';
+import 'package:frigate_intelligence/data/models/report_rule.dart';
 
 class _SyncedMockClient implements BaseApiClient {
   @override
@@ -90,6 +91,27 @@ class _SyncedMockClient implements BaseApiClient {
   @override
   Future<Map<String, dynamic>> updateFrigateConfig(Map<String, dynamic> payload) async =>
       {'status': 'ok', 'message': 'Config updated (mock)', 'config': payload};
+
+  @override
+  Future<List<ReportRule>> getReportRules() async => [];
+
+  @override
+  Future<ReportRule> createReportRule(Map<String, dynamic> payload) async =>
+      ReportRule.fromJson({...payload, 'id': 'test', 'created_at': '', 'last_run': '', 'last_status': ''});
+
+  @override
+  Future<ReportRule> updateReportRule(String id, Map<String, dynamic> payload) async =>
+      ReportRule.fromJson({...payload, 'id': id, 'created_at': '', 'last_run': '', 'last_status': ''});
+
+  @override
+  Future<void> deleteReportRule(String id) async {}
+
+  @override
+  Future<Map<String, dynamic>> testRunRule(String id) async =>
+      {'status': 'ok', 'message': 'Test run', 'rule_id': id};
+
+  @override
+  Future<List<Map<String, dynamic>>> getRuleHistory(String id) async => [];
 }
 
 void main() {

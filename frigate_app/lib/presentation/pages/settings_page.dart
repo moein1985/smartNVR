@@ -7,6 +7,7 @@ import '../providers/server_config_provider.dart';
 import '../providers/settings_provider.dart';
 import '../providers/system_maintenance_provider.dart';
 import 'orchestrator_page.dart';
+import 'report_rules_page.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -21,6 +22,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   late TextEditingController _botTokenController;
   late TextEditingController _chatIdController;
   late TextEditingController _reportIntervalController;
+  late TextEditingController _workHoursStartController;
+  late TextEditingController _workHoursEndController;
   ConnectionStatus _status = ConnectionStatus.idle;
   bool _disposed = false;
   bool _isMockMode = false;
@@ -43,6 +46,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     _botTokenController = TextEditingController();
     _chatIdController = TextEditingController();
     _reportIntervalController = TextEditingController(text: '24');
+    _workHoursStartController = TextEditingController(text: '08:00');
+    _workHoursEndController = TextEditingController(text: '16:00');
     final configAsync = ref.read(serverConfigProvider);
     configAsync.whenData((config) {
       if (!_disposed) {
@@ -69,6 +74,10 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               (settings['report_interval_hours'] ?? 24).toString();
           _reportTimezone =
               settings['report_timezone'] as String? ?? 'Asia/Tehran';
+          _workHoursStartController.text =
+              settings['work_hours_start'] as String? ?? '08:00';
+          _workHoursEndController.text =
+              settings['work_hours_end'] as String? ?? '16:00';
         });
       }
     } catch (_) {
@@ -85,6 +94,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           int.tryParse(_reportIntervalController.text.trim()) ?? 24,
       'report_timezone': _reportTimezone,
       'report_target': 'telegram',
+      'work_hours_start': _workHoursStartController.text.trim(),
+      'work_hours_end': _workHoursEndController.text.trim(),
     };
     try {
       await ref.read(settingsProvider.notifier).updateSettings(newSettings);
@@ -101,6 +112,34 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('خطا در ذخیره تنظیمات'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _saveWorkHours() async {
+    final newSettings = <String, dynamic>{
+      'work_hours_start': _workHoursStartController.text.trim(),
+      'work_hours_end': _workHoursEndController.text.trim(),
+    };
+    try {
+      await ref.read(settingsProvider.notifier).updateSettings(newSettings);
+      if (!_disposed && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('ساعات کاری ذخیره شد'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('[Settings] Failed to save work hours: $e');
+      if (!_disposed && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('خطا در ذخیره ساعات کاری'),
             backgroundColor: Colors.red,
           ),
         );
@@ -341,11 +380,69 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ),
               const SizedBox(height: 40),
               const _SectionHeader(
+                icon: Icons.schedule,
+                title: 'ساعات کاری',
+                subtitle: 'تعیین بازه زمانی حضور برای گزارش‌گیری هوشمند',
+              ),
+              const SizedBox(height: 28),
+              Text('ساعت شروع کار',
+                  style: Theme.of(context).textTheme.labelLarge),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _workHoursStartController,
+                decoration: const InputDecoration(
+                  hintText: '08:00',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.login),
+                ),
+                keyboardType: TextInputType.datetime,
+              ),
+              const SizedBox(height: 20),
+              Text('ساعت پایان کار',
+                  style: Theme.of(context).textTheme.labelLarge),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _workHoursEndController,
+                decoration: const InputDecoration(
+                  hintText: '16:00',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.logout),
+                ),
+                keyboardType: TextInputType.datetime,
+              ),
+              const SizedBox(height: 28),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: FilledButton.icon(
+                  onPressed: _saveWorkHours,
+                  icon: const Icon(Icons.save),
+                  label: const Text('ذخیره ساعات کاری'),
+                ),
+              ),
+              const SizedBox(height: 40),
+              const _SectionHeader(
                 icon: Icons.build,
                 title: 'نگهداری سیستم',
                 subtitle: 'مشاهده لاگ‌های سیستم و به‌روزرسانی OTA',
               ),
               const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const ReportRulesPage(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.rule_folder),
+                  label: const Text('قوانین گزارش‌گیری'),
+                ),
+              ),
+              const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 height: 48,
@@ -378,6 +475,8 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     _botTokenController.dispose();
     _chatIdController.dispose();
     _reportIntervalController.dispose();
+    _workHoursStartController.dispose();
+    _workHoursEndController.dispose();
     super.dispose();
   }
 }
