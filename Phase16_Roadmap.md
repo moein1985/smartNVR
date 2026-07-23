@@ -116,46 +116,46 @@ Before starting each sub-phase, verify:
 ## Sub-Phase 16.2: Report Rules Engine & History (Backend)
 
 ### Pre-Phase Baseline
-- [ ] Record baseline: `python -m pytest tests/ --co -q` count
+- [x] Record baseline: `python -m pytest tests/ --co -q` count (141)
 
 ### Data Models
 
-- [ ] Step 1: Create `ReportRule` model in `domain/models/report_rule.py`:
+- [x] Step 1: Create `ReportRule` model in `domain/models/report_rule.py`:
   - `id`, `name`, `enabled`, `zones[]`, `cameras[]`, `labels[]`
   - `interval_hours`, `timezone`, `destination` (telegram|bale), `chat_id`
   - `prompt_template`, `include_summary`, `include_raw_data`
   - `created_at`, `last_run`, `last_status`
-- [ ] Step 2: Create `ReportHistoryEntry` model in `domain/models/report_history.py`:
+- [x] Step 2: Create `ReportHistoryEntry` model in `domain/models/report_history.py`:
   - `id`, `rule_id`, `rule_name`, `executed_at`, `status`, `message_preview`, `destination`
-- [ ] Step 3: Add `work_hours_start: str = "08:00"` and `work_hours_end: str = "16:00"` to `SettingsModel`
+- [x] Step 3: Add `work_hours_start: str = "08:00"` and `work_hours_end: str = "16:00"` to `SettingsModel`
 
 ### Persistence
 
-- [ ] Step 4: Create `ReportRuleManager` in `infrastructure/config/report_rule_manager.py` (JSON, `data/report_rules.json`)
-- [ ] Step 5: Create `ReportHistoryManager` in `infrastructure/config/report_history_manager.py` (JSON, `data/report_history.json`, max 100 entries, FIFO eviction)
+- [x] Step 4: Create `ReportRuleManager` in `infrastructure/config/report_rule_manager.py` (JSON, `data/report_rules.json`)
+- [x] Step 5: Create `ReportHistoryManager` in `infrastructure/config/report_history_manager.py` (JSON, `data/report_history.json`, max 100 entries, FIFO eviction)
 
 ### Notifiers
 
-- [ ] Step 6: Create `BaleNotifier` in `infrastructure/notifiers/bale_notifier.py` (Bale Bot API: `https://api.bale.ai/v1/bots/{token}/sendMessage`)
-- [ ] Step 7: Create `NotifierFactory` in `infrastructure/notifiers/notifier_factory.py` (dispatch to Telegram or Bale based on destination string)
+- [x] Step 6: Create `BaleNotifier` in `infrastructure/notifiers/bale_notifier.py` (Bale Bot API: `https://api.bale.ai/v1/bots/{token}/sendMessage`)
+- [x] Step 7: Create `NotifierFactory` in `infrastructure/notifiers/notifier_factory.py` (dispatch to Telegram or Bale based on destination string)
 
 ### Scheduler
 
-- [ ] Step 8: Create `ReportScheduler` in `infrastructure/scheduler/report_scheduler.py`:
+- [x] Step 8: Create `ReportScheduler` in `infrastructure/scheduler/report_scheduler.py`:
   - Replaces `CronService` — manages multiple APScheduler jobs (`report_rule_{id}`)
   - `start()`: load all rules, schedule each enabled one
   - `refresh_rule(rule_id)`: reschedule single rule after create/update
   - `remove_rule(rule_id)`: remove job after delete
   - `_execute_rule(rule_id)`: build prompt → query DB → format → send via notifier → record history
-- [ ] Step 9: Implement dynamic prompt generation per rule:
+- [x] Step 9: Implement dynamic prompt generation per rule:
   - Auto-generate from zones/cameras/labels if `prompt_template` is empty
   - Include working hours context from `SettingsModel`
   - Zone-name-to-sub-label correlation hints (e.g., "zone `ahmad_table` likely tracks person `ahmad`")
-- [ ] Step 10: Wire `ReportScheduler` into FastAPI lifespan (replace `CronService`)
+- [x] Step 10: Wire `ReportScheduler` into FastAPI lifespan (replace `CronService`)
 
 ### API Endpoints
 
-- [ ] Step 11: Create `report_rule_routes.py`:
+- [x] Step 11: Create `report_rule_routes.py`:
   - `GET /api/v1/report-rules` — list all rules (admin)
   - `POST /api/v1/report-rules` — create rule (admin)
   - `GET /api/v1/report-rules/{id}` — get rule (admin)
@@ -164,13 +164,13 @@ Before starting each sub-phase, verify:
   - `POST /api/v1/report-rules/{id}/test` — trigger immediate test run (admin)
   - `GET /api/v1/report-rules/{id}/history` — get execution history for rule (admin)
   - `GET /api/v1/report-history` — get all recent history (admin)
-- [ ] Step 12: Add `work_hours_start`/`work_hours_end` to settings PUT/GET endpoints
+- [x] Step 12: Add `work_hours_start`/`work_hours_end` to settings PUT/GET endpoints
 
 ### Tests
 
-- [ ] Step 13: Backend tests — naming: `test_feat_016_2_rule_crud_create`, `test_feat_016_2_rule_crud_update`, `test_feat_016_2_rule_crud_delete`, `test_feat_016_2_scheduler_multi_job`, `test_feat_016_2_prompt_generation_zones`, `test_feat_016_2_prompt_generation_working_hours`, `test_feat_016_2_history_fifo_eviction`, `test_feat_016_2_notifier_factory_telegram`, `test_feat_016_2_notifier_factory_bale`, `test_feat_016_2_bale_notifier_structure`
-- [ ] Step 14: Verify all errors logged with `[ReportScheduler]` / `[BaleNotifier]` / `[ReportRules]` prefix — no silent failures
-- [ ] Step 15: Lint (`ruff check`) + regression (`pytest` — count ≥ baseline)
+- [x] Step 13: Backend tests — naming: `test_feat_016_2_rule_crud_create`, `test_feat_016_2_rule_crud_update`, `test_feat_016_2_rule_crud_delete`, `test_feat_016_2_scheduler_multi_job`, `test_feat_016_2_prompt_generation_zones`, `test_feat_016_2_prompt_generation_working_hours`, `test_feat_016_2_history_fifo_eviction`, `test_feat_016_2_notifier_factory_telegram`, `test_feat_016_2_notifier_factory_bale`, `test_feat_016_2_bale_notifier_structure`
+- [x] Step 14: Verify all errors logged with `[ReportScheduler]` / `[BaleNotifier]` / `[ReportRules]` prefix — no silent failures
+- [x] Step 15: Lint (`ruff check`) + regression (`pytest` — 158 passed, count ≥ baseline of 141)
 
 ---
 

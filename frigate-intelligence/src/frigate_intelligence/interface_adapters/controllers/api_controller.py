@@ -22,7 +22,9 @@ from frigate_intelligence.domain.models.settings_model import SettingsModel
 from frigate_intelligence.infrastructure.config.settings_manager import (
     SettingsManager,
 )
-from frigate_intelligence.infrastructure.scheduler.cron_service import CronService
+from frigate_intelligence.infrastructure.scheduler.report_scheduler import (
+    ReportScheduler,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -33,12 +35,12 @@ class APIController:
         text_to_sql_use_case: TextToSQLUseCase,
         settings_manager: SettingsManager | None = None,
         frigate_repo: object | None = None,
-        cron_service: CronService | None = None,
+        cron_service: ReportScheduler | None = None,
     ):
         self._use_case = text_to_sql_use_case
         self._settings_manager = settings_manager or SettingsManager()
         self._frigate_repo = frigate_repo
-        self._cron_service = cron_service
+        self._scheduler = cron_service
         self.router = APIRouter(prefix="/api/v1", tags=["intelligence"])
         self._register_routes()
 
@@ -133,9 +135,7 @@ class APIController:
     async def update_settings(self, settings: SettingsModel) -> dict:
         logger.info("POST /settings")
         self._settings_manager.save(settings)
-        if self._cron_service:
-            self._cron_service._refresh_job()
-            logger.info("Cron schedule refreshed after settings update")
+        logger.info("Settings saved successfully")
         return {"status": "ok", "message": "Settings saved successfully"}
 
     async def get_recordings(

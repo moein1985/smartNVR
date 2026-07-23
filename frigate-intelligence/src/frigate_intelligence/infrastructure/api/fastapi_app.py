@@ -14,8 +14,16 @@ from frigate_intelligence.interface_adapters.controllers.api_controller import (
 from frigate_intelligence.infrastructure.config.settings_manager import (
     SettingsManager,
 )
+from frigate_intelligence.infrastructure.config.report_rule_manager import (
+    ReportRuleManager,
+)
+from frigate_intelligence.infrastructure.config.report_history_manager import (
+    ReportHistoryManager,
+)
 from frigate_intelligence.infrastructure.logging_config import setup_logging
-from frigate_intelligence.infrastructure.scheduler.cron_service import CronService
+from frigate_intelligence.infrastructure.scheduler.report_scheduler import (
+    ReportScheduler,
+)
 from frigate_intelligence.infrastructure.api.routes.event_routes import (
     create_event_router,
 )
@@ -31,6 +39,9 @@ from frigate_intelligence.infrastructure.api.routes.system_routes import (
 from frigate_intelligence.infrastructure.api.routes.auth_routes import (
     create_auth_router,
     create_user_router,
+)
+from frigate_intelligence.infrastructure.api.routes.report_rule_routes import (
+    create_report_rule_router,
 )
 
 logger = logging.getLogger(__name__)
@@ -56,15 +67,24 @@ def create_app(container: Container) -> FastAPI:
     setup_logging(level=log_level)
     logger.info("Initializing Frigate Intelligence Platform")
 
-    cron_service = CronService(settings_manager=settings_manager, container=container)
+    rule_manager = ReportRuleManager()
+    history_manager = ReportHistoryManager()
+    report_scheduler = ReportScheduler(
+        settings_manager=settings_manager,
+        rule_manager=rule_manager,
+        history_manager=history_manager,
+        container=container,
+    )
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        cron_service.start()
-        app.state.cron_service = cron_service
+        report_scheduler.start()
+        app.state.report_scheduler = report_scheduler
         app.state.settings_manager = settings_manager
+        app.state.rule_manager = rule_manager
+        app.state.history_manager = history_manager
         yield
-        cron_service.stop()
+        report_scheduler.stop()
 
     app = FastAPI(
         title="Frigate Intelligence Platform",
@@ -86,7 +106,7 @@ def create_app(container: Container) -> FastAPI:
         container.text_to_sql_use_case,
         settings_manager=settings_manager,
         frigate_repo=container.frigate_repo,
-        cron_service=cron_service,
+        cron_service=report_scheduler,
     )
     app.include_router(controller.router)
 
@@ -107,5 +127,8 @@ def create_app(container: Container) -> FastAPI:
 
     user_router = create_user_router()
     app.include_router(user_router)
+
+    report_rule_router = create_report_rule_router()
+    app.include_router(report_rule_router)
 
     return app

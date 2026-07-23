@@ -14,3 +14,5 @@ class SettingsModel(BaseModel):
     report_interval_hours: int = 24
     report_timezone: str = "Asia/Tehran"
     log_level: str = "INFO"
+    work_hours_start: str = "08:00"
+    work_hours_end: str = "16:00"
