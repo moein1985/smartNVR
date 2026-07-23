@@ -1,7 +1,11 @@
 """Container manager module — lists and inspects running Docker containers."""
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
+from frigate_intelligence.infrastructure.orchestrator.container_capability import (
+    ContainerCapabilityChecker,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +17,7 @@ class ContainerInfo:
     status: str
     short_id: str
     ports: list[dict]
+    capability: dict = field(default_factory=dict)
 
 
 class ContainerManager:
@@ -39,6 +44,7 @@ class ContainerManager:
             logger.error(f"Failed to list containers: {e}")
             return []
 
+        checker = ContainerCapabilityChecker()
         result: list[ContainerInfo] = []
         for c in containers:
             try:
@@ -57,6 +63,8 @@ class ContainerManager:
                         else:
                             ports.append({"container_port": container_port})
 
+                cap = checker.check(c)
+
                 result.append(
                     ContainerInfo(
                         name=c.name,
@@ -64,6 +72,11 @@ class ContainerManager:
                         status=c.status,
                         short_id=c.short_id,
                         ports=ports,
+                        capability={
+                            "supports_gpu": cap.supports_gpu,
+                            "detection_strategy": cap.detection_strategy,
+                            "details": cap.details,
+                        },
                     )
                 )
             except Exception as e:
@@ -80,6 +93,7 @@ class ContainerManager:
                 "status": c.status,
                 "short_id": c.short_id,
                 "ports": c.ports,
+                "capability": c.capability,
             }
             for c in containers
         ]

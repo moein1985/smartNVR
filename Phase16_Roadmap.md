@@ -205,31 +205,31 @@ Before starting each sub-phase, verify:
 ## Sub-Phase 16.4: Hardware Orchestrator UI (Web Panel + Backend)
 
 ### Pre-Phase Baseline
-- [ ] Record baseline: `python -m pytest tests/ --co -q` count
+- [x] Record baseline: `python -m pytest tests/ --co -q` count (158)
 
 ### Backend
 
-- [ ] Step 1: Create `ContainerCapabilityChecker` in `infrastructure/orchestrator/container_capability.py`:
+- [x] Step 1: Create `ContainerCapabilityChecker` in `infrastructure/orchestrator/container_capability.py`:
   - Strategy 1: Check `HostConfig.DeviceRequests` for nvidia driver
   - Strategy 2: Match image name patterns (`tensorrt`, `cuda`, `nvidia/`)
   - Strategy 3: Default CPU-only
-- [ ] Step 2: Extend `GET /api/v1/system/containers` to include `capability` field per container
-- [ ] Step 3: Backend tests — naming: `test_feat_016_4_capability_gpu_container`, `test_feat_016_4_capability_cpu_container`, `test_feat_016_4_capability_pattern_match_tensorrt`, `test_feat_016_4_capability_pattern_match_cuda`
-- [ ] Step 3b: Verify all errors logged with `[ContainerCapability]` prefix — no silent failures
+- [x] Step 2: Extend `GET /api/v1/system/containers` to include `capability` field per container
+- [x] Step 3: Backend tests — naming: `test_feat_016_4_capability_gpu_container`, `test_feat_016_4_capability_cpu_container`, `test_feat_016_4_capability_pattern_match_tensorrt`, `test_feat_016_4_capability_pattern_match_cuda`
+- [x] Step 3b: Verify all errors logged with `[ContainerCapability]` prefix — no silent failures
 
 ### Web Panel
 
-- [ ] Step 4: Create `src/hooks/use-hardware.ts` — TanStack Query hook (5s polling)
-- [ ] Step 5: Create `src/hooks/use-containers.ts` — TanStack Query hook
-- [ ] Step 6: Create `src/app/(dashboard)/orchestrator/page.tsx`:
+- [x] Step 4: Create `src/hooks/use-hardware.ts` — TanStack Query hook (5s polling)
+- [x] Step 5: Create `src/hooks/use-containers.ts` — TanStack Query hook
+- [x] Step 6: Create `src/app/(dashboard)/orchestrator/page.tsx`:
   - Hardware overview cards: CPU cores + utilization, RAM total/available, GPU cards (name, memory, utilization)
   - Service binding table: one row per container
   - Per row: container name, image, status, CPU core checkboxes, GPU dropdown (disabled if `supports_gpu == false` + warning badge), memory limit input
   - "Apply" button → calls `POST /api/v1/system/assign`
   - Current override file preview (read-only)
-- [ ] Step 7: Create `src/components/hardware-overview.tsx` — reusable hardware cards
-- [ ] Step 8: Create `src/components/service-binding-table.tsx` — binding table with GPU validation
-- [ ] Step 10: Web panel lint (`npm run lint`) + build (`npm run build`) — 0 errors
+- [x] Step 7: Create `src/components/hardware-overview.tsx` — reusable hardware cards
+- [x] Step 8: Create `src/components/service-binding-table.tsx` — binding table with GPU validation
+- [x] Step 10: Web panel lint (`npm run lint`) + build (`npm run build`) — 0 errors, build success
 
 ---
 
