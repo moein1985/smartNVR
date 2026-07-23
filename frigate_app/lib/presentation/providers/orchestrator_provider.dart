@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/server_config_provider.dart';
 
@@ -44,6 +45,7 @@ class OrchestratorNotifier extends Notifier<OrchestratorState> {
       final hw = await client.getHardware();
       state = state.copyWith(hardware: hw, isLoadingHardware: false);
     } catch (e) {
+      debugPrint('[Orchestrator] Failed to fetch hardware: $e');
       state = state.copyWith(
         isLoadingHardware: false,
         error: 'خطا در دریافت اطلاعات سخت‌افزار: $e',
@@ -59,6 +61,7 @@ class OrchestratorNotifier extends Notifier<OrchestratorState> {
       final list = result['containers'] as List? ?? [];
       state = state.copyWith(containers: list, isLoadingContainers: false);
     } catch (e) {
+      debugPrint('[Orchestrator] Failed to fetch containers: $e');
       state = state.copyWith(
         isLoadingContainers: false,
         error: 'خطا در دریافت کانتینرها: $e',
