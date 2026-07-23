@@ -11,11 +11,20 @@ SCHEMA_REPORT_PATH = (
 )
 
 
-def load_schema_context() -> str:
-    """Load the Frigate database schema report as a string for LLM context."""
+def load_schema_context(
+    work_hours_start: str | None = None,
+    work_hours_end: str | None = None,
+) -> str:
+    """Load the Frigate database schema report as a string for LLM context.
+
+    If work_hours_start and work_hours_end are provided, they are injected
+    as strict temporal boundary rules into the schema context so the LLM
+    filters daily presence queries accordingly.
+    """
     if SCHEMA_REPORT_PATH.exists():
-        return SCHEMA_REPORT_PATH.read_text(encoding="utf-8")
-    return """Frigate SQLite Database Schema:
+        base = SCHEMA_REPORT_PATH.read_text(encoding="utf-8")
+    else:
+        base = """Frigate SQLite Database Schema:
 Tables: event, recordings, timeline, reviewsegment, previews, regions, user
 Key table: event (id VARCHAR, label VARCHAR, camera VARCHAR, start_time DATETIME, end_time DATETIME, score REAL, sub_label VARCHAR, zones JSON, data JSON)
 Time format: Unix timestamps (float, seconds since epoch)
@@ -25,6 +34,20 @@ Sub-labels: recognized person names (e.g., 'moein'), 'unknown', or NULL
 Zones: configured via Frigate UI. Zone naming convention:
 - [name]_table: employee workstation (e.g., soleymani_table)
 - [name]_sensitive: secure/restricted area (e.g., warehouse_sensitive)"""
+
+    if work_hours_start and work_hours_end:
+        base += (
+            f"\n\n--- Working Hours Context ---\n"
+            f"Active working hours: {work_hours_start} to {work_hours_end}.\n"
+            f"Rule: If a query asks about daily presence, attendance, or 'how long was X at desk', "
+            f"filter events between {work_hours_start} and {work_hours_end} for the relevant day. "
+            f"Events outside this range should be excluded from work-hour calculations.\n"
+            f"Rule: Zone names ending with `_table` (e.g., `ahmad_table`) correspond to a person's workstation. "
+            f"If the zone is `[name]_table`, correlate it with the `sub_label` `[name]` for presence tracking. "
+            f"For example, zone `ahmad_table` with sub_label `ahmad` means Ahmad was at his own desk."
+        )
+
+    return base
 
 
 def get_frigate_zones(frigate_url: str = "http://192.168.85.203:5000") -> str:
@@ -171,7 +194,43 @@ FROM event
 WHERE zones LIKE '%_table%' AND label='person' AND sub_label IS NOT NULL
   AND start_time >= strftime('%s', 'now', 'start of day')
 GROUP BY sub_label, zones
-ORDER BY zones, first_seen;"""
+ORDER BY zones, first_seen;
+
+-- How long was Ahmad at his desk today during working hours (08:00-16:00)?
+-- Uses client timezone offset to compute working-hours boundaries in Unix time.
+SELECT sub_label,
+       datetime(MIN(start_time), 'unixepoch', 'localtime') as first_seen,
+       datetime(MAX(end_time), 'unixepoch', 'localtime') as last_seen,
+       ROUND(SUM(end_time - start_time) / 60, 1) as total_minutes
+FROM event
+WHERE zones LIKE '%ahmad_table%' AND sub_label LIKE '%ahmad%'
+  AND label='person'
+  AND start_time >= strftime('%s', 'now', 'start of day')
+  AND start_time <= strftime('%s', 'now', 'start of day', '+16 hours')
+  AND start_time >= strftime('%s', 'now', 'start of day', '+8 hours')
+GROUP BY sub_label;
+
+-- Who was present at their workstation during working hours today?
+SELECT sub_label, zones,
+       datetime(MIN(start_time), 'unixepoch', 'localtime') as first_seen,
+       datetime(MAX(end_time), 'unixepoch', 'localtime') as last_seen,
+       ROUND(SUM(end_time - start_time) / 60, 1) as total_minutes
+FROM event
+WHERE zones LIKE '%_table%' AND label='person' AND sub_label IS NOT NULL
+  AND start_time >= strftime('%s', 'now', 'start of day', '+8 hours')
+  AND start_time <= strftime('%s', 'now', 'start of day', '+16 hours')
+GROUP BY sub_label, zones
+ORDER BY total_minutes DESC;
+
+-- Find someone else at Ahmad's desk (zone-name vs sub_label mismatch)
+SELECT id, sub_label, zones,
+       datetime(start_time, 'unixepoch', 'localtime') as start_time,
+       datetime(end_time, 'unixepoch', 'localtime') as end_time
+FROM event
+WHERE zones LIKE '%ahmad_table%' AND label='person'
+  AND sub_label NOT LIKE '%ahmad%' AND sub_label IS NOT NULL
+  AND start_time >= strftime('%s', 'now', 'start of day')
+ORDER BY start_time DESC;"""
 
 
 SQL_RULES = """1. Generate ONLY SELECT queries. No INSERT, UPDATE, DELETE, DROP, ALTER, or ATTACH.
@@ -189,4 +248,6 @@ SQL_RULES = """1. Generate ONLY SELECT queries. No INSERT, UPDATE, DELETE, DROP,
 13. The `sub_label` column stores recognized person names (e.g., 'moein', 'ahmad'), 'unknown' for unrecognized faces, comma-separated for multiple faces, or NULL. When a user asks about a person by name, filter with sub_label LIKE '%name%' alongside label='person'. Never use label='person_name'. For "who was seen", query DISTINCT sub_label WHERE sub_label IS NOT NULL.
 14. Zone Naming Convention: Zones ending with `_table` (e.g., `soleymani_table`) represent employee workstations. Zones ending with `_sensitive` (e.g., `warehouse_sensitive`) represent secure/restricted areas. When a user asks about "desk presence", "work hours", or "who was at X's desk", filter zones LIKE '%_table'. When asking about "unauthorized access", "security alerts", or "restricted areas", filter zones LIKE '%_sensitive'.
 15. Zone + sub_label Synergy: To find "who was at Soleymani's desk", combine zone and sub_label: WHERE zones LIKE '%soleymani_table%' AND sub_label NOT LIKE '%soleymani%' AND label='person'. This identifies anyone OTHER than Soleymani at their desk. To find Soleymani's active hours: WHERE zones LIKE '%soleymani_table%' AND sub_label LIKE '%soleymani%'.
-16. Work Hours Calculation: To calculate active desk time for an employee, query events in their `_table` zone with their `sub_label`, then compute SUM(end_time - start_time) for overlapping or consecutive events. Use MIN(start_time) as first_seen and MAX(end_time) as last_seen for daily presence summary."""
+16. Work Hours Calculation: To calculate active desk time for an employee, query events in their `_table` zone with their `sub_label`, then compute SUM(end_time - start_time) for overlapping or consecutive events. Use MIN(start_time) as first_seen and MAX(end_time) as last_seen for daily presence summary.
+17. Working Hours Filtering: If a query asks about daily presence, attendance, or "how long was X at desk", filter events between the active working hours provided in the context (work_hours_start and work_hours_end). Events outside this range should be excluded from work-hour calculations. Use the client's timezone offset to compute the correct Unix timestamp boundaries for the working hours on the relevant day.
+18. Zone-Name to Person Correlation: Zone names ending with `_table` (e.g., `ahmad_table`) correspond to a person's workstation. If the zone is `[name]_table`, correlate it with the `sub_label` `[name]` for presence tracking. For example, zone `ahmad_table` with sub_label `ahmad` means Ahmad was at his own desk. If the sub_label differs from the zone prefix, it means someone else was at that desk."""

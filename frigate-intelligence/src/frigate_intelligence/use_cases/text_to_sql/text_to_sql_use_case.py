@@ -16,6 +16,8 @@ class TextToSQLRequest:
     question: str
     max_retries: int = 3
     client_tz_info: dict | None = None
+    work_hours_start: str | None = None
+    work_hours_end: str | None = None
 
 
 @dataclass
@@ -51,10 +53,14 @@ class TextToSQLUseCase:
         self._prompt = PromptBuilder.build()
 
     def execute(self, request: TextToSQLRequest) -> TextToSQLResponse:
-        if request.client_tz_info:
-            prompt = PromptBuilder.build(request.client_tz_info)
+        if request.client_tz_info or request.work_hours_start:
+            prompt = PromptBuilder.build(
+                request.client_tz_info,
+                work_hours_start=request.work_hours_start,
+                work_hours_end=request.work_hours_end,
+            )
             system_prompt = prompt.as_system_prompt()
-            logger.info("[TimeSync] Prompt rebuilt with client timezone context")
+            logger.info("[TimeSync] Prompt rebuilt with client timezone and/or working hours context")
         else:
             system_prompt = self._prompt.as_system_prompt()
         logger.info(f"Query received: {request.question}")
@@ -143,10 +149,14 @@ class TextToSQLUseCase:
         )
 
     def execute_streaming(self, request: TextToSQLRequest) -> TextToSQLStreamResult:
-        if request.client_tz_info:
-            prompt = PromptBuilder.build(request.client_tz_info)
+        if request.client_tz_info or request.work_hours_start:
+            prompt = PromptBuilder.build(
+                request.client_tz_info,
+                work_hours_start=request.work_hours_start,
+                work_hours_end=request.work_hours_end,
+            )
             system_prompt = prompt.as_system_prompt()
-            logger.info("[TimeSync] Stream prompt rebuilt with client timezone context")
+            logger.info("[TimeSync] Stream prompt rebuilt with client timezone and/or working hours context")
         else:
             system_prompt = self._prompt.as_system_prompt()
         logger.info(f"Stream query received: {request.question}")

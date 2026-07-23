@@ -63,10 +63,13 @@ class APIController:
                 "timestamp": request.client_timestamp,
             }
             logger.info(f"POST /query - client TZ info: offset={request.client_offset_minutes}min, tz={request.client_timezone}")
+        settings = self._settings_manager.load()
         req = TextToSQLRequest(
             question=request.question,
             max_retries=request.max_retries,
             client_tz_info=client_tz_info,
+            work_hours_start=settings.work_hours_start,
+            work_hours_end=settings.work_hours_end,
         )
         response = self._use_case.execute(req)
         logger.info(f"POST /query - completed: {response.attempts} attempts, {response.result.row_count} rows")
@@ -81,10 +84,13 @@ class APIController:
                 "offset_minutes": request.client_offset_minutes,
                 "timestamp": request.client_timestamp,
             }
+        settings = self._settings_manager.load()
         req = TextToSQLRequest(
             question=request.question,
             max_retries=request.max_retries,
             client_tz_info=client_tz_info,
+            work_hours_start=settings.work_hours_start,
+            work_hours_end=settings.work_hours_end,
         )
         result = self._use_case.execute_streaming(req)
         logger.info(f"POST /query/stream - SQL: {result.sql}, attempts: {result.attempts}, rows: {result.result.row_count}")

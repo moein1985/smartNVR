@@ -246,6 +246,8 @@ class ReportScheduler:
                 question=prompt,
                 max_retries=3,
                 client_tz_info=client_tz_info,
+                work_hours_start=settings.work_hours_start,
+                work_hours_end=settings.work_hours_end,
             )
             response = self._container.text_to_sql_use_case.execute(req)
             message = _format_report(response, report_date, rule.interval_hours)

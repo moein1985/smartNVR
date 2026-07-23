@@ -14,8 +14,15 @@ logger = logging.getLogger(__name__)
 
 class PromptBuilder:
     @staticmethod
-    def build(client_tz_info: dict | None = None) -> PromptContext:
-        schema_text = load_schema_context()
+    def build(
+        client_tz_info: dict | None = None,
+        work_hours_start: str | None = None,
+        work_hours_end: str | None = None,
+    ) -> PromptContext:
+        schema_text = load_schema_context(
+            work_hours_start=work_hours_start,
+            work_hours_end=work_hours_end,
+        )
         zone_info = get_frigate_zones()
         schema_text = f"{schema_text}\n\n{zone_info}"
         time_context = PromptBuilder._build_time_context(client_tz_info)

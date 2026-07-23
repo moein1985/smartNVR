@@ -250,16 +250,16 @@ Before starting each sub-phase, verify:
 ## Sub-Phase 16.6: Working Hours & LLM Intelligence (Backend)
 
 ### Pre-Phase Baseline
-- [ ] Record baseline: `python -m pytest tests/ --co -q` count
+- [x] Record baseline: `python -m pytest tests/ --co -q` count (165)
 
-- [ ] Step 1: Update `frigate_schema.py` SQL rules to include working hours context:
+- [x] Step 1: Update `frigate_schema.py` SQL rules to include working hours context:
   - Rule: "If working hours are 08:00–16:00, queries about 'how long was X at desk' should filter events between those hours"
   - Rule: "Zone names with `_table` suffix correspond to workstations. If zone is `ahmad_table` and sub_label is `ahmad`, they refer to the same person."
-- [ ] Step 2: Update `load_schema_context()` to inject `work_hours_start`/`work_hours_end` from settings into the LLM schema context
-- [ ] Step 3: Update `_build_prompt_for_rule()` to include working hours in generated prompts
-- [ ] Step 4: Update `SAMPLE_QUERIES` with working-hours examples (e.g., "How long was Ahmad at his desk today during working hours?")
-- [ ] Step 5: Backend tests — naming: `test_feat_016_6_working_hours_in_prompt`, `test_feat_016_6_working_hours_in_schema_context`, `test_feat_016_6_zone_name_correlation_hint`
-- [ ] Step 6: Lint (`ruff check`) + regression (`pytest` — count ≥ baseline)
+- [x] Step 2: Update `load_schema_context()` to inject `work_hours_start`/`work_hours_end` from settings into the LLM schema context
+- [x] Step 3: Update `_build_prompt_for_rule()` to include working hours in generated prompts
+- [x] Step 4: Update `SAMPLE_QUERIES` with working-hours examples (e.g., "How long was Ahmad at his desk today during working hours?")
+- [x] Step 5: Backend tests — naming: `test_feat_016_6_working_hours_in_prompt`, `test_feat_016_6_working_hours_in_schema_context`, `test_feat_016_6_zone_name_correlation_hint`
+- [x] Step 6: Lint (`ruff check`) + regression (`pytest` — 173 passed, count ≥ baseline of 165)
 
 ---
 
