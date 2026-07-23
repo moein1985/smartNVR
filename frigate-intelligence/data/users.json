@@ -1,0 +1,20 @@
+{
+  "users": [
+    {
+      "id": "9e7938539ad0464b853d4d91c3015eab",
+      "username": "admin",
+      "password_hash": "$2b$12$/cwK7jSFT6hi/hD1vMfvh.kkCIK4iD49LPMcGzbvEuEpPSffbhms.",
+      "role": "admin",
+      "created_at": "2026-07-23T08:09:07.378717+00:00",
+      "is_seed": true
+    },
+    {
+      "id": "61f660f83d484080ad08bb24ae601e98",
+      "username": "user",
+      "password_hash": "$2b$12$wn2TmoniyV0aJ7Xh5oYqoO7hGNr3ShvOBOaXur6rRc0joKKOAGVVq",
+      "role": "user",
+      "created_at": "2026-07-23T08:09:07.567764+00:00",
+      "is_seed": true
+    }
+  ]
+}
