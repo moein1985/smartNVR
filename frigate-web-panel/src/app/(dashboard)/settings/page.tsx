@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { getSettings, updateSettings, type SettingsPayload } from "@/lib/settings-api";
 
 const LLM_MODELS = [
@@ -211,6 +212,26 @@ export default function SettingsPage() {
         <h1 className="text-xl font-bold text-gray-200">تنظیمات سیستم</h1>
         <p className="text-sm text-gray-500 mt-1">پیکربندی پلتفرم</p>
       </div>
+
+      <Link
+        href="/settings/users"
+        className="bg-gray-800 rounded-3xl p-5 flex items-center justify-between hover:bg-gray-750 transition-colors group"
+      >
+        <div className="flex items-center gap-4">
+          <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-gray-700 text-cyan-400">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.243m15.94 2.655a4.125 4.125 0 00-8.048 0m15.94 2.655a4.125 4.125 0 00-8.048 0m15.94 2.655a4.125 4.125 0 00-8.048 0M3 4.984v15.5a.75.75 0 001.227.579L7.5 18.75l3.273 2.313A.75.75 0 0012 20.484V4.984a.75.75 0 00-.75-.75H3.75A.75.75 0 003 4.984z" />
+            </svg>
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-gray-200">مدیریت کاربران</h2>
+            <p className="text-sm text-gray-500 mt-0.5">افزودن، ویرایش و حذف کاربران سیستم</p>
+          </div>
+        </div>
+        <svg className="w-5 h-5 text-gray-600 group-hover:text-cyan-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+        </svg>
+      </Link>
 
       {/* AI Configuration */}
       <SectionCard

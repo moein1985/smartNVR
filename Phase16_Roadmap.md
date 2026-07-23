@@ -235,15 +235,15 @@ Before starting each sub-phase, verify:
 
 ## Sub-Phase 16.5: User Management UI (Web Panel)
 
-- [ ] Step 1: Create `src/lib/users-api.ts` — API client for user CRUD
-- [ ] Step 2: Create `src/hooks/use-users.ts` — TanStack Query hooks
-- [ ] Step 3: Create `src/app/(dashboard)/settings/users/page.tsx` — user management table:
+- [x] Step 1: Create `src/lib/users-api.ts` — API client for user CRUD
+- [x] Step 2: Create `src/hooks/use-users.ts` — TanStack Query hooks
+- [x] Step 3: Create `src/app/(dashboard)/settings/users/page.tsx` — user management table:
   - Columns: username, role, created_at, actions (edit, delete)
   - "Add User" button → modal with username/password/role form
   - Seed admin row: delete button disabled, tooltip "حذف‌نشدنی"
   - Edit user: change password, change role
-- [ ] Step 4: Integrate user management as a tab/section within Settings page
-- [ ] Step 6: Web panel lint (`npm run lint`) + build (`npm run build`) — 0 errors
+- [x] Step 4: Integrate user management as a tab/section within Settings page
+- [x] Step 6: Web panel lint (`npm run lint`) + build (`npm run build`) — 0 errors, build success
 
 ---
 
