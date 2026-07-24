@@ -2,8 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
+const BASE_URL = "";
 
 function getAuthHeaders(): Record<string, string> {
   const token =

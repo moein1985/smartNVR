@@ -1,5 +1,4 @@
-const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
+const BASE_URL = "";
 
 export interface SettingsPayload {
   avalai_api_key: string;

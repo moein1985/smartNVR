@@ -4,6 +4,7 @@ import logging
 import os
 import subprocess
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import psutil
 
@@ -69,13 +70,52 @@ class HardwareDiscovery:
         info.cpu_cores = os.cpu_count() or 0
         info.cpu_percent = psutil.cpu_percent(interval=0.5)
 
-        mem = psutil.virtual_memory()
-        info.memory_total_gb = mem.total / (1024**3)
-        info.memory_available_gb = mem.available / (1024**3)
-        info.memory_used_pct = mem.percent
+        host_mem = self._read_host_meminfo()
+        if host_mem is not None:
+            total_bytes, avail_bytes = host_mem
+            info.memory_total_gb = total_bytes / (1024**3)
+            info.memory_available_gb = avail_bytes / (1024**3)
+            info.memory_used_pct = ((total_bytes - avail_bytes) / total_bytes * 100) if total_bytes > 0 else 0.0
+            logger.info(
+                f"[ContainerCapability] Host memory from /host/proc/meminfo: "
+                f"{info.memory_total_gb:.2f} GB total, {info.memory_available_gb:.2f} GB available"
+            )
+        else:
+            mem = psutil.virtual_memory()
+            info.memory_total_gb = mem.total / (1024**3)
+            info.memory_available_gb = mem.available / (1024**3)
+            info.memory_used_pct = mem.percent
 
         info.gpus = self._discover_gpus()
         return info
+
+    @staticmethod
+    def _read_host_meminfo() -> tuple[int, int] | None:
+        """Read host memory info from /host/proc/meminfo if available.
+
+        Returns (total_bytes, available_bytes) or None if host proc is not mounted.
+        """
+        host_proc = Path("/host/proc/meminfo")
+        if not host_proc.exists():
+            return None
+
+        try:
+            total_kb = 0
+            avail_kb = 0
+            with host_proc.open("r", encoding="utf-8") as f:
+                for line in f:
+                    if line.startswith("MemTotal:"):
+                        total_kb = int(line.split()[1])
+                    elif line.startswith("MemAvailable:"):
+                        avail_kb = int(line.split()[1])
+                        break
+
+            if total_kb > 0:
+                return total_kb * 1024, avail_kb * 1024
+        except (OSError, ValueError, IndexError) as e:
+            logger.warning(f"Failed to read /host/proc/meminfo: {e}")
+
+        return None
 
     def _discover_gpus(self) -> list[GpuInfo]:
         try:

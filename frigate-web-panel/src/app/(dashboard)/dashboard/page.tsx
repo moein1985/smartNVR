@@ -3,8 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
+const BASE_URL = "";
 
 export default function DashboardPage() {
   const { data: health } = useQuery({
@@ -38,7 +37,7 @@ export default function DashboardPage() {
   });
 
   const cpu = hardware?.cpu;
-  const ram = hardware?.ram;
+  const mem = hardware?.memory;
   const gpus = hardware?.gpus || [];
   const containerList = containers?.containers || [];
 
@@ -82,15 +81,14 @@ export default function DashboardPage() {
           {cpu ? (
             <>
               <p className="text-2xl font-bold text-cyan-400">{cpu.cores} هسته</p>
-              <p className="text-xs text-gray-500 mt-1">{cpu.model || "—"}</p>
               <div className="mt-3">
                 <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-cyan-500 rounded-full transition-all"
-                    style={{ width: `${cpu.percent}%` }}
+                    style={{ width: `${cpu.utilization_pct}%` }}
                   />
                 </div>
-                <p className="text-xs text-gray-500 mt-1">{cpu.percent?.toFixed(1)}% استفاده</p>
+                <p className="text-xs text-gray-500 mt-1">{cpu.utilization_pct?.toFixed(1)}% استفاده</p>
               </div>
             </>
           ) : (
@@ -101,20 +99,20 @@ export default function DashboardPage() {
         {/* RAM */}
         <div className="bg-gray-800 rounded-3xl p-6">
           <h3 className="text-sm font-medium text-gray-400 mb-3">حافظه RAM</h3>
-          {ram ? (
+          {mem ? (
             <>
               <p className="text-2xl font-bold text-cyan-400">
-                {(ram.total / (1024**3)).toFixed(1)} GB
+                {mem.total_gb.toFixed(1)} GB
               </p>
               <div className="mt-3">
                 <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-cyan-500 rounded-full transition-all"
-                    style={{ width: `${ram.percent}%` }}
+                    style={{ width: `${mem.used_pct}%` }}
                   />
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  {ram.percent?.toFixed(1)}% استفاده — {(ram.available / (1024**3)).toFixed(1)} GB آزاد
+                  {mem.used_pct?.toFixed(1)}% استفاده — {mem.available_gb.toFixed(1)} GB آزاد
                 </p>
               </div>
             </>
@@ -127,11 +125,11 @@ export default function DashboardPage() {
         <div className="bg-gray-800 rounded-3xl p-6">
           <h3 className="text-sm font-medium text-gray-400 mb-3">GPU</h3>
           {gpus.length > 0 ? (
-            gpus.map((gpu: { name: string; memory_total_mb: number; utilization_percent: number }, i: number) => (
+            gpus.map((gpu: { name: string; memory_total_mb: number; gpu_utilization_pct: number }, i: number) => (
               <div key={i} className={i > 0 ? "mt-3 pt-3 border-t border-gray-700" : ""}>
                 <p className="text-sm font-bold text-cyan-400">{gpu.name}</p>
                 <p className="text-xs text-gray-500 mt-1">
-                  {gpu.memory_total_mb} MB — {gpu.utilization_percent}% استفاده
+                  {gpu.memory_total_mb} MB — {gpu.gpu_utilization_pct}% استفاده
                 </p>
               </div>
             ))

@@ -10,8 +10,7 @@ export interface ChatMessageData {
   error?: string;
 }
 
-const FRIGATE_URL =
-  process.env.NEXT_PUBLIC_FRIGATE_URL || "http://192.168.85.203:5000";
+const FRIGATE_URL = "/frigate-api";
 
 export function ChatMessage({ message }: { message: ChatMessageData }) {
   const isUser = message.role === "user";

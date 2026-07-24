@@ -109,6 +109,80 @@ def test_hardware_discovery_nvidia_smi_nonzero_return():
     assert gpus == []
 
 
+def test_bug_038_host_meminfo_reads_host_ram():
+    """Regression test for BUG-038: _read_host_meminfo should parse /host/proc/meminfo."""
+    hd = HardwareDiscovery()
+    meminfo_content = (
+        "MemTotal:       65536000 kB\n"
+        "MemFree:         1000000 kB\n"
+        "MemAvailable:    32768000 kB\n"
+        "Buffers:          100000 kB\n"
+    )
+    mock_path = MagicMock()
+    mock_path.exists.return_value = True
+    mock_path.open.return_value.__enter__.return_value = iter(meminfo_content.splitlines(True))
+    with patch("frigate_intelligence.infrastructure.orchestrator.hardware_discovery.Path", return_value=mock_path):
+        result = hd._read_host_meminfo()
+
+    assert result is not None
+    total_bytes, avail_bytes = result
+    assert total_bytes == 65536000 * 1024
+    assert avail_bytes == 32768000 * 1024
+
+
+def test_bug_038_host_meminfo_returns_none_when_not_mounted():
+    """Regression test for BUG-038: _read_host_meminfo should return None when /host/proc not mounted."""
+    hd = HardwareDiscovery()
+    mock_path = MagicMock()
+    mock_path.exists.return_value = False
+    with patch("frigate_intelligence.infrastructure.orchestrator.hardware_discovery.Path", return_value=mock_path):
+        result = hd._read_host_meminfo()
+
+    assert result is None
+
+
+def test_bug_038_discover_uses_host_meminfo_when_available():
+    """Regression test for BUG-038: discover() should prefer host meminfo over psutil."""
+    hd = HardwareDiscovery()
+    meminfo_content = (
+        "MemTotal:       67108864 kB\n"
+        "MemAvailable:    33554432 kB\n"
+    )
+    mock_path = MagicMock()
+    mock_path.exists.return_value = True
+    mock_path.open.return_value.__enter__.return_value = iter(meminfo_content.splitlines(True))
+    with (
+        patch("frigate_intelligence.infrastructure.orchestrator.hardware_discovery.Path", return_value=mock_path),
+        patch("frigate_intelligence.infrastructure.orchestrator.hardware_discovery.psutil") as mock_psutil,
+        patch.object(hd, "_discover_gpus", return_value=[]),
+    ):
+        mock_psutil.cpu_percent.return_value = 10.0
+        info = hd.discover()
+
+    assert info.memory_total_gb == pytest.approx(64.0, abs=0.01)
+    assert info.memory_available_gb == pytest.approx(32.0, abs=0.01)
+    assert info.memory_used_pct == pytest.approx(50.0, abs=0.1)
+    mock_psutil.virtual_memory.assert_not_called()
+
+
+def test_bug_038_discover_falls_back_to_psutil_without_host_proc():
+    """Regression test for BUG-038: discover() should fall back to psutil when host proc not mounted."""
+    hd = HardwareDiscovery()
+    mock_path = MagicMock()
+    mock_path.exists.return_value = False
+    with (
+        patch("frigate_intelligence.infrastructure.orchestrator.hardware_discovery.Path", return_value=mock_path),
+        patch("frigate_intelligence.infrastructure.orchestrator.hardware_discovery.psutil") as mock_psutil,
+        patch.object(hd, "_discover_gpus", return_value=[]),
+    ):
+        mock_psutil.cpu_percent.return_value = 10.0
+        mock_psutil.virtual_memory.return_value = _make_mem()
+        info = hd.discover()
+
+    assert info.memory_total_gb == pytest.approx(16.0, abs=0.01)
+    mock_psutil.virtual_memory.assert_called_once()
+
+
 def test_hardware_info_to_dict():
     """HardwareInfo.to_dict should produce a serializable dict."""
     info = HardwareInfo(

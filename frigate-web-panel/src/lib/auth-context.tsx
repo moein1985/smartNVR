@@ -45,6 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (username: string, password: string) => {
     const res = await apiLogin(username, password);
     localStorage.setItem("auth_token", res.token);
+    document.cookie = `auth_token=${res.token}; path=/; max-age=86400; SameSite=Lax`;
     setToken(res.token);
     const u = await getMe(res.token);
     setUser(u);
@@ -52,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     localStorage.removeItem("auth_token");
+    document.cookie = "auth_token=; path=/; max-age=0";
     setToken(null);
     setUser(null);
   }, []);
